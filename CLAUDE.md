@@ -1,4 +1,4 @@
-# YAZIO Clone - Projektexperte
+# Coach imi - Projektexperte
 
 ## Befehle
 - `npm test`: Führt die Jest-Tests aus.

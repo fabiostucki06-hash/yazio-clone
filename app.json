@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "Coach imi",
-    "slug": "yazio-klon",
+    "slug": "coach-imi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "yazioklon",
+    "scheme": "coachimi",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"

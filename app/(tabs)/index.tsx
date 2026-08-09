@@ -1,11 +1,10 @@
 import { router } from 'expo-router';
-import { Camera, Coffee, Cookie, Moon, Plus, UtensilsCrossed } from 'lucide-react-native';
+import { Camera, Coffee, Cookie, GlassWater, Moon, Plus, UtensilsCrossed } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AiRecommendationCard } from '@/components/features/AiRecommendationCard';
-import { DrinkTracker } from '@/components/features/DrinkTracker';
 import { NUTRIENT_META, NUTRIENT_ORDER } from '@/components/features/nutrientMeta';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { useDiaryStore, todayKey } from '@/store/diaryStore';
@@ -18,13 +17,14 @@ interface IconProps {
   size?: number;
 }
 
-const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'drinks'];
 
 const MEAL_TYPE_META: Record<MealType, { label: string; Icon: ComponentType<IconProps> }> = {
   breakfast: { label: 'Frühstück', Icon: Coffee },
   lunch: { label: 'Mittagessen', Icon: UtensilsCrossed },
   dinner: { label: 'Abendessen', Icon: Moon },
   snack: { label: 'Snacks', Icon: Cookie },
+  drinks: { label: 'Getränke', Icon: GlassWater },
 };
 
 const ACCENT = '#10b981';
@@ -138,6 +138,7 @@ export default function DiaryScreen() {
     lunch: [],
     dinner: [],
     snack: [],
+    drinks: [],
   };
   for (const entry of entries) {
     entriesByMealType[entry.mealType].push(entry);
@@ -203,8 +204,6 @@ export default function DiaryScreen() {
         </View>
 
         <AiRecommendationCard remainingCalories={remainingCalories} remainingMacros={remainingMacros} />
-
-        <DrinkTracker />
 
         <View className="gap-3">
           <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Mahlzeiten</Text>

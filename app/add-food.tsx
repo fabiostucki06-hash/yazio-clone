@@ -14,6 +14,7 @@ const MEAL_LABELS: Record<MealType, string> = {
   lunch: 'Mittagessen',
   dinner: 'Abendessen',
   snack: 'Snacks',
+  drinks: 'Getränke',
 };
 
 const DEBOUNCE_MS = 400;

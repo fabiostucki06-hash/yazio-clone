@@ -30,7 +30,6 @@ const defaultUser: User = {
   gender: 'male',
   activityLevel: 'moderate',
   goal: 'maintain',
-  waterGoalMl: 2500,
   visibleNutrients: DEFAULT_VISIBLE_NUTRIENTS,
 };
 
@@ -50,7 +49,6 @@ interface UserState {
   completeOnboarding: (name: string, email: string) => void;
   updateAccount: (input: { name: string; email: string }) => void;
   updateProfile: (input: ProfileInput) => void;
-  setWaterGoal: (ml: number) => void;
   addWeightEntry: (weightKg: number, date?: string) => void;
   toggleNutrientVisibility: (key: NutrientKey) => void;
 }
@@ -106,10 +104,6 @@ export const useUserStore = create<UserState>()(
         if (!hasToday) {
           get().addWeightEntry(input.weightKg, today);
         }
-      },
-
-      setWaterGoal: (ml) => {
-        set((state) => ({ user: { ...state.user, waterGoalMl: ml } }));
       },
 
       toggleNutrientVisibility: (key) => {

@@ -29,7 +29,6 @@ export interface User {
   gender?: Gender;
   activityLevel?: ActivityLevel;
   goal?: Goal;
-  waterGoalMl?: number;
   visibleNutrients: NutrientVisibility;
 }
 
@@ -44,7 +43,7 @@ export interface FoodItem {
   servingUnit: string;
 }
 
-export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drinks';
 
 export interface MealEntry {
   id: string;
@@ -67,13 +66,4 @@ export interface WeightEntry {
   id: string;
   date: string;
   weightKg: number;
-}
-
-export type DrinkType = 'water' | 'coffee' | 'juice' | 'soda';
-
-export interface DrinkEntry {
-  id: string;
-  type: DrinkType;
-  ml: number;
-  loggedAt: string;
 }

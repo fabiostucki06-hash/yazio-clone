@@ -17,6 +17,7 @@ const MEAL_LABELS: Record<MealType, string> = {
   lunch: 'Mittagessen',
   dinner: 'Abendessen',
   snack: 'Snacks',
+  drinks: 'Getränke',
 };
 
 const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {

@@ -1,24 +1,22 @@
 import { supabase } from '@/lib/supabase';
 import { useDiaryStore } from '@/store/diaryStore';
 import { useUserStore } from '@/store/userStore';
-import type { DrinkEntry, MealEntry, User, WeightEntry } from '@/types';
+import type { MealEntry, User, WeightEntry } from '@/types';
 
 export interface CloudSnapshot {
   user: User;
   weightHistory: WeightEntry[];
   entriesByDate: Record<string, MealEntry[]>;
-  drinkEntriesByDate: Record<string, DrinkEntry[]>;
 }
 
 export function buildSnapshot(): CloudSnapshot {
   const { user, weightHistory } = useUserStore.getState();
-  const { entriesByDate, drinkEntriesByDate } = useDiaryStore.getState();
+  const { entriesByDate } = useDiaryStore.getState();
 
   return {
     user,
     weightHistory,
     entriesByDate,
-    drinkEntriesByDate,
   };
 }
 
@@ -30,7 +28,6 @@ export function applySnapshot(snapshot: CloudSnapshot): void {
   }));
   useDiaryStore.setState({
     entriesByDate: snapshot.entriesByDate ?? {},
-    drinkEntriesByDate: snapshot.drinkEntriesByDate ?? {},
   });
 }
 

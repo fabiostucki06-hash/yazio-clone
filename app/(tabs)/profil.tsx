@@ -19,18 +19,28 @@ function GoalInputRow({
   value,
   onChangeText,
   suffix,
+  accentColor,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   onChangeText: (text: string) => void;
   suffix: string;
+  accentColor: string;
 }) {
+  const [isFocused, setIsFocused] = useState(false);
+
   return (
-    <View className="flex-row items-center justify-between rounded-2xl border border-white/60 bg-white/70 px-4 py-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
+    <View
+      className={`flex-row items-center justify-between rounded-[20px] border bg-[#EDF2F7] px-5 py-3.5 dark:bg-white/5 ${
+        isFocused
+          ? 'border-[#2ECC71] shadow-md shadow-emerald-500/15 dark:border-emerald-400/70'
+          : 'border-[#D1D5DB] shadow-none dark:border-white/10'
+      }`}
+    >
       <View className="flex-row items-center gap-3">
         {icon}
-        <Text className="text-sm text-slate-500 dark:text-slate-400">{label}</Text>
+        <Text className="text-sm font-semibold text-slate-600 dark:text-slate-300">{label}</Text>
       </View>
       <View className="flex-row items-center gap-1.5">
         <TextInput
@@ -38,8 +48,12 @@ function GoalInputRow({
           keyboardType="decimal-pad"
           value={value}
           onChangeText={onChangeText}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
         />
-        <Text className="text-sm text-slate-400">{suffix}</Text>
+        <Text className="text-sm font-semibold" style={{ color: accentColor }}>
+          {suffix}
+        </Text>
       </View>
     </View>
   );
@@ -166,7 +180,7 @@ export default function ProfilScreen() {
       <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 pt-4 pb-32">
         <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Profil</Text>
 
-        <View className="items-center gap-3 rounded-[28px] border border-white/60 bg-white/70 py-6 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
+        <View className="items-center gap-3 rounded-[28px] border border-slate-200/70 bg-white py-6 shadow-2xl shadow-slate-900/10 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30">
             <Text className="text-2xl font-bold text-white">{initial || '?'}</Text>
           </View>
@@ -200,10 +214,10 @@ export default function ProfilScreen() {
 
         <View className="gap-2">
           <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Ziele</Text>
-          <GoalInputRow icon={<Target color="#10b981" size={18} />} label="Tagesziel Kalorien" value={calorieGoal} onChangeText={setCalorieGoal} suffix="kcal" />
-          <GoalInputRow icon={<Wheat color="#3b82f6" size={18} />} label="Carbs" value={carbsGoal} onChangeText={handleCarbsChange} suffix="g" />
-          <GoalInputRow icon={<Egg color="#ef4444" size={18} />} label="Protein" value={proteinGoal} onChangeText={handleProteinChange} suffix="g" />
-          <GoalInputRow icon={<Droplet color="#f59e0b" size={18} />} label="Fett" value={fatGoal} onChangeText={handleFatChange} suffix="g" />
+          <GoalInputRow icon={<Target color="#10b981" size={18} />} label="Tagesziel Kalorien" value={calorieGoal} onChangeText={setCalorieGoal} suffix="kcal" accentColor="#10b981" />
+          <GoalInputRow icon={<Wheat color="#3b82f6" size={18} />} label="Carbs" value={carbsGoal} onChangeText={handleCarbsChange} suffix="g" accentColor="#3b82f6" />
+          <GoalInputRow icon={<Egg color="#ef4444" size={18} />} label="Protein" value={proteinGoal} onChangeText={handleProteinChange} suffix="g" accentColor="#ef4444" />
+          <GoalInputRow icon={<Droplet color="#f59e0b" size={18} />} label="Fett" value={fatGoal} onChangeText={handleFatChange} suffix="g" accentColor="#f59e0b" />
           <Button label="Ziele speichern" onPress={handleSaveGoals} disabled={!isGoalsFormValid} className="mt-1" />
         </View>
 

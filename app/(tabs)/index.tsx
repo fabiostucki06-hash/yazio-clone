@@ -72,7 +72,10 @@ function MealCard({ mealType, entries }: { mealType: MealType; entries: MealEntr
   const kcal = entries.reduce((sum, entry) => sum + entry.foodItem.caloriesPerServing * entry.servings, 0);
 
   return (
-    <View className="gap-3 rounded-[28px] border border-white/60 bg-white/70 p-4 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60 dark:shadow-black/20">
+    <Pressable
+      className="gap-3 rounded-[28px] border border-white/60 bg-white/70 p-4 shadow-xl shadow-slate-900/5 backdrop-blur-xl active:opacity-90 dark:border-white/10 dark:bg-slate-900/60 dark:shadow-black/20"
+      onPress={() => router.push({ pathname: '/meal-detail', params: { mealType } })}
+    >
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
           <View className="h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10">
@@ -115,7 +118,7 @@ function MealCard({ mealType, entries }: { mealType: MealType; entries: MealEntr
           ))}
         </View>
       )}
-    </View>
+    </Pressable>
   );
 }
 

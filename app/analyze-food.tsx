@@ -105,7 +105,7 @@ export default function AnalyzeFoodScreen() {
   }
 
   function handleClose() {
-    router.dismissAll();
+    router.back();
   }
 
   const parsedGrams = parseNumber(grams, 0);
@@ -137,7 +137,7 @@ export default function AnalyzeFoodScreen() {
     };
 
     addEntry(todayKey(), foodItem, mealType, parsedGrams / 100);
-    router.dismissAll();
+    router.back();
   }
 
   return (

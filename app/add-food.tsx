@@ -78,7 +78,7 @@ export default function AddFoodScreen() {
       addEntry(todayKey(), item.foodItem, mealType, item.servings);
     }
     clearCart();
-    router.dismissAll();
+    router.back();
   }
 
   const cartTotalKcal = cart.reduce((sum, item) => sum + item.foodItem.caloriesPerServing * item.servings, 0);

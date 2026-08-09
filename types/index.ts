@@ -1,3 +1,5 @@
+import type { ActivityLevel, Gender, Goal } from '@/utils/nutritionCalculator';
+
 export interface Macros {
   carbs: number;
   protein: number;
@@ -12,6 +14,11 @@ export interface User {
   dailyMacroGoal: Macros;
   weightKg?: number;
   heightCm?: number;
+  age?: number;
+  gender?: Gender;
+  activityLevel?: ActivityLevel;
+  goal?: Goal;
+  waterGoalMl?: number;
 }
 
 export interface FoodItem {
@@ -41,4 +48,25 @@ export interface DailyLog {
   entries: MealEntry[];
   totalCalories: number;
   totalMacros: Macros;
+}
+
+export interface WeightEntry {
+  id: string;
+  date: string;
+  weightKg: number;
+}
+
+export type FastingPlanId = '16:8' | '14:10' | '5:2';
+
+export interface FastingPlan {
+  id: FastingPlanId;
+  label: string;
+  fastingHours: number;
+  eatingHours: number;
+}
+
+export interface FastingSession {
+  planId: FastingPlanId;
+  startedAt: string;
+  isFasting: boolean;
 }

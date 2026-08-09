@@ -1,31 +1,33 @@
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const DAILY_CALORIE_GOAL = 2200;
-const IN_GOAL_COLOR = '#22c55e';
+import { useDiaryStore } from '@/store/diaryStore';
+import { useUserStore } from '@/store/userStore';
+
+const IN_GOAL_COLOR = '#10b981';
 const OVER_GOAL_COLOR = '#f59e0b';
+const EMPTY_COLOR = '#e2e8f0';
 const CHART_HEIGHT = 120;
+const DAYS_IN_WEEK = 7;
 
 interface DayStat {
+  key: string;
   label: string;
   calories: number;
 }
 
-const weekStats: DayStat[] = [
-  { label: 'Mo', calories: 1950 },
-  { label: 'Di', calories: 2100 },
-  { label: 'Mi', calories: 1800 },
-  { label: 'Do', calories: 2340 },
-  { label: 'Fr', calories: 2000 },
-  { label: 'Sa', calories: 2410 },
-  { label: 'So', calories: 1700 },
-];
-
-const maxCalories = Math.max(...weekStats.map((day) => day.calories), DAILY_CALORIE_GOAL);
-const averageCalories = Math.round(
-  weekStats.reduce((sum, day) => sum + day.calories, 0) / weekStats.length,
-);
-const daysInGoal = weekStats.filter((day) => day.calories <= DAILY_CALORIE_GOAL).length;
+function getLastNDays(days: number): { key: string; label: string }[] {
+  const result: { key: string; label: string }[] = [];
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    result.push({
+      key: date.toISOString().slice(0, 10),
+      label: date.toLocaleDateString('de-DE', { weekday: 'short' }).slice(0, 2),
+    });
+  }
+  return result;
+}
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
@@ -37,33 +39,63 @@ function StatTile({ label, value }: { label: string; value: string }) {
 }
 
 export default function StatistikScreen() {
+  const entriesByDate = useDiaryStore((state) => state.entriesByDate);
+  const user = useUserStore((state) => state.user);
+  const weightHistory = useUserStore((state) => state.weightHistory);
+
+  const dailyCalorieGoal = user.dailyCalorieGoal;
+
+  const weekStats: DayStat[] = getLastNDays(DAYS_IN_WEEK).map(({ key, label }) => {
+    const entries = entriesByDate[key] ?? [];
+    const calories = entries.reduce((sum, entry) => sum + entry.foodItem.caloriesPerServing * entry.servings, 0);
+    return { key, label, calories: Math.round(calories) };
+  });
+
+  const loggedDays = weekStats.filter((day) => day.calories > 0);
+  const averageCalories = loggedDays.length > 0
+    ? Math.round(loggedDays.reduce((sum, day) => sum + day.calories, 0) / loggedDays.length)
+    : 0;
+  const daysInGoal = loggedDays.filter((day) => day.calories <= dailyCalorieGoal).length;
+
+  const maxCalories = Math.max(...weekStats.map((day) => day.calories), dailyCalorieGoal);
+
+  const weightChange =
+    weightHistory.length >= 2
+      ? weightHistory[weightHistory.length - 1].weightKg - weightHistory[0].weightKg
+      : 0;
+  const weightChangeLabel = weightHistory.length >= 2 ? `${weightChange > 0 ? '+' : ''}${weightChange.toFixed(1)} kg` : '—';
+
   return (
     <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
       <View className="flex-1 gap-6 px-6 pt-4">
         <Text className="text-2xl font-bold text-slate-900 dark:text-white">Statistik</Text>
 
         <View className="flex-row gap-4">
-          <StatTile label="Ø Kalorien / Tag" value={`${averageCalories} kcal`} />
-          <StatTile label="Tage im Ziel" value={`${daysInGoal} von ${weekStats.length}`} />
+          <StatTile label="Ø Kalorien / Tag" value={loggedDays.length > 0 ? `${averageCalories} kcal` : '—'} />
+          <StatTile label="Tage im Ziel" value={`${daysInGoal} von ${loggedDays.length}`} />
+        </View>
+
+        <View className="flex-row gap-4">
+          <StatTile label="Gewichtsänderung" value={weightChangeLabel} />
+          <StatTile label="Aktuelles Gewicht" value={user.weightKg ? `${user.weightKg} kg` : '—'} />
         </View>
 
         <View className="gap-4 rounded-2xl bg-white p-5 dark:bg-slate-800">
-          <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-            Kalorien letzte 7 Tage
-          </Text>
+          <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Kalorien letzte 7 Tage</Text>
 
           <View style={{ height: CHART_HEIGHT }} className="flex-row items-end justify-between">
             {weekStats.map((day) => {
-              const barHeight = Math.max((day.calories / maxCalories) * CHART_HEIGHT, 4);
-              const isOverGoal = day.calories > DAILY_CALORIE_GOAL;
+              const hasEntries = day.calories > 0;
+              const barHeight = hasEntries ? Math.max((day.calories / maxCalories) * CHART_HEIGHT, 4) : 4;
+              const isOverGoal = day.calories > dailyCalorieGoal;
 
               return (
-                <View key={day.label} className="items-center gap-2">
+                <View key={day.key} className="items-center gap-2">
                   <View
                     className="w-4 rounded-t"
                     style={{
                       height: barHeight,
-                      backgroundColor: isOverGoal ? OVER_GOAL_COLOR : IN_GOAL_COLOR,
+                      backgroundColor: !hasEntries ? EMPTY_COLOR : isOverGoal ? OVER_GOAL_COLOR : IN_GOAL_COLOR,
                     }}
                   />
                   <Text className="text-xs text-slate-400">{day.label}</Text>
@@ -80,6 +112,10 @@ export default function StatistikScreen() {
             <View className="flex-row items-center gap-1.5">
               <View className="h-2 w-2 rounded-full" style={{ backgroundColor: OVER_GOAL_COLOR }} />
               <Text className="text-xs text-slate-500 dark:text-slate-400">Über Ziel</Text>
+            </View>
+            <View className="flex-row items-center gap-1.5">
+              <View className="h-2 w-2 rounded-full" style={{ backgroundColor: EMPTY_COLOR }} />
+              <Text className="text-xs text-slate-500 dark:text-slate-400">Keine Daten</Text>
             </View>
           </View>
         </View>

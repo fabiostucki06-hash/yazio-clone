@@ -1,9 +1,9 @@
-import { BookOpen, ChartColumn, User } from 'lucide-react-native';
+import { BookOpen, ChartColumn, Timer, User } from 'lucide-react-native';
 import { Tabs } from 'expo-router';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-const ACTIVE_COLOR = '#22c55e';
+const ACTIVE_COLOR = '#10b981';
 
 export default function TabsLayout() {
   const colorScheme = useColorScheme();
@@ -26,6 +26,13 @@ export default function TabsLayout() {
         options={{
           title: 'Tagebuch',
           tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="fasten"
+        options={{
+          title: 'Fasten',
+          tabBarIcon: ({ color, size }) => <Timer color={color} size={size} />,
         }}
       />
       <Tabs.Screen

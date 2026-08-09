@@ -80,11 +80,16 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     if (hasInitialized) return;
     hasInitialized = true;
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.onAuthStateChange((event, session) => {
       set({ session, sessionChecked: true });
       if (session) {
-        set({ status: 'syncing', error: null });
-        afterSessionEstablished(session);
+        // Only pull remote state on a genuine (re-)login, not on token refreshes or
+        // user-metadata updates — those fire the same callback but must not overwrite
+        // local edits made since the last sync.
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          set({ status: 'syncing', error: null });
+          afterSessionEstablished(session);
+        }
       } else {
         stopAutoSyncWatchers();
         set({ status: 'offline', lastSyncedAt: null, error: null });

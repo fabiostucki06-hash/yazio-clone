@@ -178,6 +178,7 @@ export default function DiaryScreen() {
     <SafeAreaView className="relative flex-1 bg-slate-50 dark:bg-background-dark">
       <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 pt-4 pb-32">
         <View>
+          <Text className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Coach imi</Text>
           <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Tagebuch</Text>
           <Text className="text-sm text-slate-500 dark:text-slate-400">{today}</Text>
         </View>

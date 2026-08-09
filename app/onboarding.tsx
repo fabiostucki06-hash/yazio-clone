@@ -126,6 +126,7 @@ export default function OnboardingScreen() {
             <View className="h-20 w-20 items-center justify-center rounded-[28px] bg-emerald-500 shadow-lg shadow-emerald-500/30">
               <Sparkles color="#ffffff" size={32} />
             </View>
+            <Text className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">Coach imi</Text>
             {!(step === 'account' && mode === 'login') && (
               <View className="flex-row gap-2">
                 {STEPS.map((s, index) => (
@@ -142,7 +143,7 @@ export default function OnboardingScreen() {
             <Card className="gap-4">
               <View className="items-center gap-1">
                 <Text className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                  {mode === 'signUp' ? 'Konto erstellen' : 'Willkommen zurück'}
+                  {mode === 'signUp' ? 'Konto erstellen' : 'Willkommen zurück bei Coach imi'}
                 </Text>
                 <Text className="text-center text-sm text-slate-500 dark:text-slate-400">
                   {mode === 'signUp'

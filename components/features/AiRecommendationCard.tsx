@@ -24,7 +24,7 @@ export function AiRecommendationCard({ remainingCalories, remainingMacros }: AiR
         </View>
         <View className="flex-1">
           <Text className="text-xs font-semibold uppercase tracking-wide text-emerald-100">
-            {recommendation.timeLabel} · KI-Empfehlung
+            {recommendation.timeLabel} · Coach imi Tipp
           </Text>
           <Text className="text-sm font-bold tracking-tight text-white">{recommendation.headline}</Text>
         </View>

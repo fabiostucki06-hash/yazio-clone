@@ -1,10 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Barcode, Search, X } from 'lucide-react-native';
+import { Barcode, Check, Search, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FoodApiError, searchFood } from '@/services/foodApi';
+import { useDiaryStore, todayKey } from '@/store/diaryStore';
 import { useUiStore } from '@/store/uiStore';
 import type { FoodItem, MealType } from '@/types';
 
@@ -21,6 +22,10 @@ export default function AddFoodScreen() {
   const params = useLocalSearchParams<{ mealType: MealType }>();
   const mealType = params.mealType ?? 'breakfast';
   const setPendingSelection = useUiStore((state) => state.setPendingSelection);
+  const cart = useUiStore((state) => state.cart);
+  const removeFromCart = useUiStore((state) => state.removeFromCart);
+  const clearCart = useUiStore((state) => state.clearCart);
+  const addEntry = useDiaryStore((state) => state.addEntry);
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<FoodItem[]>([]);
@@ -63,6 +68,21 @@ export default function AddFoodScreen() {
     router.push('/log-quantity');
   }
 
+  function handleClose() {
+    clearCart();
+    router.back();
+  }
+
+  function handleFinish() {
+    for (const item of cart) {
+      addEntry(todayKey(), item.foodItem, mealType, item.servings);
+    }
+    clearCart();
+    router.dismissAll();
+  }
+
+  const cartTotalKcal = cart.reduce((sum, item) => sum + item.foodItem.caloriesPerServing * item.servings, 0);
+
   return (
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-background-dark">
       <View className="flex-row items-center justify-between px-6 pt-4">
@@ -72,11 +92,42 @@ export default function AddFoodScreen() {
         </View>
         <Pressable
           className="h-9 w-9 items-center justify-center rounded-full border border-slate-200/50 bg-slate-100/60 backdrop-blur-md active:opacity-80 dark:border-white/10 dark:bg-white/5"
-          onPress={() => router.back()}
+          onPress={handleClose}
         >
           <X color="#64748b" size={18} />
         </Pressable>
       </View>
+
+      {cart.length > 0 && (
+        <View className="gap-2 px-6 pt-4">
+          <Text className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            Ausgewählt ({cart.length})
+          </Text>
+          <View className="gap-2">
+            {cart.map((item) => (
+              <View
+                key={item.id}
+                className="flex-row items-center justify-between rounded-2xl border border-white/60 bg-white/70 px-4 py-2.5 shadow-md shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60"
+              >
+                <View className="flex-1 pr-3">
+                  <Text className="text-sm font-medium text-slate-900 dark:text-white" numberOfLines={1}>
+                    {item.foodItem.name}
+                  </Text>
+                  <Text className="text-xs text-slate-400">
+                    {Math.round(item.foodItem.caloriesPerServing * item.servings)} kcal
+                  </Text>
+                </View>
+                <Pressable
+                  className="h-7 w-7 items-center justify-center rounded-full bg-slate-100/60 active:opacity-80 dark:bg-white/5"
+                  onPress={() => removeFromCart(item.id)}
+                >
+                  <X color="#64748b" size={14} />
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
 
       <View className="gap-3 px-6 pt-4">
         <View className="flex-row items-center gap-2 rounded-2xl border border-white/60 bg-white/70 px-4 py-3 shadow-md shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
@@ -110,7 +161,7 @@ export default function AddFoodScreen() {
         className="flex-1 px-6 pt-4"
         data={results}
         keyExtractor={(item) => item.id}
-        contentContainerClassName="gap-2 pb-12"
+        contentContainerClassName={cart.length > 0 ? 'gap-2 pb-28' : 'gap-2 pb-12'}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           !loading && query.trim().length > 0 && !error ? (
@@ -138,6 +189,20 @@ export default function AddFoodScreen() {
           </Pressable>
         )}
       />
+
+      {cart.length > 0 && (
+        <View className="absolute inset-x-0 bottom-0 border-t border-white/60 bg-white/80 px-6 pb-8 pt-3 shadow-2xl shadow-slate-900/10 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">
+          <Pressable
+            className="flex-row items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3.5 shadow-lg shadow-emerald-500/25 active:opacity-90 active:bg-emerald-600"
+            onPress={handleFinish}
+          >
+            <Check color="#ffffff" size={18} />
+            <Text className="text-base font-semibold text-white">
+              Fertig · {cart.length} {cart.length === 1 ? 'Eintrag' : 'Einträge'} · {Math.round(cartTotalKcal)} kcal
+            </Text>
+          </Pressable>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

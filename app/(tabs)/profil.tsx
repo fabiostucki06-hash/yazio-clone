@@ -31,7 +31,7 @@ const ACTIVITY_OPTIONS: { id: ActivityLevel; label: string }[] = [
 
 function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <View className="flex-row items-center justify-between rounded-xl bg-white px-4 py-3 dark:bg-slate-800">
+    <View className="flex-row items-center justify-between rounded-2xl border border-white/60 bg-white/70 px-4 py-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
       <View className="flex-row items-center gap-3">
         {icon}
         <Text className="text-sm text-slate-500 dark:text-slate-400">{label}</Text>
@@ -58,10 +58,10 @@ function ChipGroup<T extends string>({
           <Pressable
             key={option.id}
             onPress={() => onSelect(option.id)}
-            className={`rounded-full border-2 px-4 py-2 ${
+            className={`rounded-full border px-4 py-2 backdrop-blur-md active:opacity-80 ${
               isSelected
-                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10'
-                : 'border-transparent bg-white dark:bg-slate-800'
+                ? 'border-emerald-500/60 bg-emerald-500/10'
+                : 'border-white/60 bg-white/70 dark:border-white/10 dark:bg-white/5'
             }`}
           >
             <Text
@@ -120,15 +120,15 @@ export default function ProfilScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 pt-4 pb-12">
-        <Text className="text-2xl font-bold text-slate-900 dark:text-white">Profil</Text>
+      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 pt-4 pb-32">
+        <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Profil</Text>
 
-        <View className="items-center gap-3 rounded-2xl bg-white py-6 dark:bg-slate-800">
-          <View className="h-16 w-16 items-center justify-center rounded-full bg-emerald-500">
+        <View className="items-center gap-3 rounded-[28px] border border-white/60 bg-white/70 py-6 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30">
             <Text className="text-2xl font-bold text-white">{initial}</Text>
           </View>
           <View className="items-center">
-            <Text className="text-lg font-semibold text-slate-900 dark:text-white">{user.name}</Text>
+            <Text className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">{user.name}</Text>
             <Text className="text-sm text-slate-500 dark:text-slate-400">{user.email}</Text>
           </View>
         </View>
@@ -174,7 +174,7 @@ export default function ProfilScreen() {
               <View
                 key={key}
                 className={`flex-row items-center justify-between py-3 ${
-                  index > 0 ? 'border-t border-slate-100 dark:border-slate-700' : ''
+                  index > 0 ? 'border-t border-slate-200/50 dark:border-white/10' : ''
                 }`}
               >
                 <View className="flex-row items-center gap-3">
@@ -194,7 +194,7 @@ export default function ProfilScreen() {
 
         <Card className="gap-4">
           <View className="flex-row items-center gap-3">
-            <View className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">
+            <View className="h-10 w-10 items-center justify-center rounded-full bg-slate-100/70 dark:bg-white/5">
               <Scale color="#64748b" size={18} />
             </View>
             <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Gewichtsverlauf</Text>
@@ -215,7 +215,7 @@ export default function ProfilScreen() {
             </View>
             <Pressable
               onPress={handleAddWeight}
-              className="h-[50px] w-[50px] items-center justify-center rounded-2xl bg-emerald-500"
+              className="h-[50px] w-[50px] items-center justify-center rounded-2xl bg-emerald-500 shadow-lg shadow-emerald-500/30 active:opacity-90 active:bg-emerald-600"
             >
               <Plus color="#ffffff" size={20} />
             </Pressable>

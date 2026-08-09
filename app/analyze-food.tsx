@@ -144,11 +144,11 @@ export default function AnalyzeFoodScreen() {
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-background-dark">
       <View className="flex-row items-center justify-between px-6 pt-4">
         <View>
-          <Text className="text-lg font-bold text-slate-900 dark:text-white">KI-Foto-Analyse</Text>
+          <Text className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">KI-Foto-Analyse</Text>
           <Text className="text-xs text-slate-400">{MEAL_LABELS[mealType]}</Text>
         </View>
         <Pressable
-          className="h-9 w-9 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700"
+          className="h-9 w-9 items-center justify-center rounded-full border border-slate-200/50 bg-slate-100/60 backdrop-blur-md active:opacity-80 dark:border-white/10 dark:bg-white/5"
           onPress={handleClose}
         >
           <X color="#64748b" size={18} />
@@ -159,14 +159,14 @@ export default function AnalyzeFoodScreen() {
         {!imageUri ? (
           <View className="gap-3">
             <Pressable
-              className="flex-row items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-4"
+              className="flex-row items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-4 shadow-lg shadow-emerald-500/25 active:opacity-90 active:bg-emerald-600"
               onPress={handleTakePhoto}
             >
               <Camera color="#ffffff" size={18} />
               <Text className="text-base font-semibold text-white">Foto aufnehmen</Text>
             </Pressable>
             <Pressable
-              className="flex-row items-center justify-center gap-2 rounded-2xl bg-white px-5 py-4 shadow-sm dark:bg-slate-800"
+              className="flex-row items-center justify-center gap-2 rounded-2xl border border-white/60 bg-white/70 px-5 py-4 shadow-md shadow-slate-900/5 backdrop-blur-xl active:opacity-80 dark:border-white/10 dark:bg-slate-900/60"
               onPress={handlePickFromLibrary}
             >
               <ImagePlus color="#10b981" size={18} />
@@ -177,11 +177,11 @@ export default function AnalyzeFoodScreen() {
           </View>
         ) : (
           <View className="gap-3">
-            <View className="aspect-[4/3] w-full overflow-hidden rounded-3xl bg-slate-200">
+            <View className="aspect-[4/3] w-full overflow-hidden rounded-[28px] border border-white/60 bg-slate-200 dark:border-white/10">
               <Image source={{ uri: imageUri }} className="h-full w-full" resizeMode="cover" />
             </View>
             <Pressable
-              className="flex-row items-center justify-center gap-2 rounded-2xl bg-white px-4 py-2.5 shadow-sm dark:bg-slate-800"
+              className="flex-row items-center justify-center gap-2 rounded-2xl border border-white/60 bg-white/70 px-4 py-2.5 shadow-md shadow-slate-900/5 backdrop-blur-xl active:opacity-80 dark:border-white/10 dark:bg-slate-900/60"
               onPress={handleReset}
             >
               <RotateCcw color="#64748b" size={16} />
@@ -193,7 +193,7 @@ export default function AnalyzeFoodScreen() {
         {pickerError && <Text className="text-sm text-red-500">{pickerError}</Text>}
 
         {analyzing && (
-          <View className="items-center gap-3 rounded-3xl bg-white p-6 shadow-md dark:bg-slate-800">
+          <View className="items-center gap-3 rounded-[28px] border border-white/60 bg-white/70 p-6 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
             <ActivityIndicator color="#10b981" size="large" />
             <Text className="text-sm text-slate-500 dark:text-slate-400">Mahlzeit wird analysiert...</Text>
           </View>
@@ -201,9 +201,9 @@ export default function AnalyzeFoodScreen() {
 
         {result && !analyzing && (
           <>
-            <View className="gap-3 rounded-3xl bg-emerald-500 p-4 shadow-md">
+            <View className="gap-3 rounded-[28px] border border-white/20 bg-emerald-500/90 p-4 shadow-2xl shadow-emerald-500/30 backdrop-blur-xl">
               <View className="flex-row items-center gap-3">
-                <View className="h-9 w-9 items-center justify-center rounded-full bg-white/20">
+                <View className="h-9 w-9 items-center justify-center rounded-full bg-white/20 backdrop-blur-md">
                   <Sparkles color="#ffffff" size={16} />
                 </View>
                 <Text className="flex-1 text-sm font-semibold text-white">

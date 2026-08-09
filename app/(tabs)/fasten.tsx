@@ -63,9 +63,9 @@ export default function FastenScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-background-dark">
-      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 pt-4 pb-12">
+      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 pt-4 pb-32">
         <View>
-          <Text className="text-2xl font-bold text-slate-900 dark:text-white">Fasten</Text>
+          <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Fasten</Text>
           <Text className="text-sm text-slate-500 dark:text-slate-400">Intervallfasten</Text>
         </View>
 
@@ -77,10 +77,10 @@ export default function FastenScreen() {
                 key={p.id}
                 disabled={!!session}
                 onPress={() => selectPlan(p.id as FastingPlanId)}
-                className={`flex-1 items-center gap-1 rounded-2xl border-2 px-3 py-3 ${
+                className={`flex-1 items-center gap-1 rounded-2xl border px-3 py-3 backdrop-blur-md active:opacity-80 ${
                   isSelected
-                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10'
-                    : 'border-transparent bg-white dark:bg-slate-800'
+                    ? 'border-emerald-500/60 bg-emerald-500/10'
+                    : 'border-white/60 bg-white/70 dark:border-white/10 dark:bg-white/5'
                 } ${session ? 'opacity-50' : ''}`}
               >
                 <Text
@@ -98,9 +98,9 @@ export default function FastenScreen() {
           })}
         </View>
 
-        <Card className="items-center gap-4 rounded-3xl p-6">
+        <Card className="items-center gap-4 rounded-[32px] p-6 shadow-2xl shadow-emerald-500/10">
           <ProgressRing size={RING_SIZE} strokeWidth={RING_STROKE} progress={progress} color={ringColor}>
-            <Text className="text-4xl font-bold tabular-nums text-slate-900 dark:text-white">
+            <Text className="text-4xl font-bold tracking-tight tabular-nums text-slate-900 dark:text-white">
               {formatDuration(remainingSeconds)}
             </Text>
             <Text className="mt-1 text-xs text-slate-400">

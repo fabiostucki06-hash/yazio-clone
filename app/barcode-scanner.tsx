@@ -40,9 +40,9 @@ export default function BarcodeScannerScreen() {
   return (
     <SafeAreaView className="flex-1 bg-black">
       <View className="flex-row items-center justify-between px-6 pt-4">
-        <Text className="text-lg font-bold text-white">Barcode scannen</Text>
+        <Text className="text-lg font-bold tracking-tight text-white">Barcode scannen</Text>
         <Pressable
-          className="h-9 w-9 items-center justify-center rounded-full bg-white/20"
+          className="h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 backdrop-blur-md active:opacity-80"
           onPress={() => router.back()}
         >
           <X color="#ffffff" size={18} />
@@ -60,7 +60,7 @@ export default function BarcodeScannerScreen() {
             <Button label="Zugriff erlauben" onPress={requestPermission} />
           </View>
         ) : (
-          <View className="aspect-square w-full overflow-hidden rounded-3xl">
+          <View className="aspect-square w-full overflow-hidden rounded-[28px] border border-white/20">
             <CameraView
               className="flex-1"
               barcodeScannerSettings={{
@@ -72,7 +72,7 @@ export default function BarcodeScannerScreen() {
         )}
 
         {loading && (
-          <View className="absolute inset-0 items-center justify-center bg-black/50">
+          <View className="absolute inset-0 items-center justify-center bg-black/50 backdrop-blur-md">
             <ActivityIndicator color="#10b981" size="large" />
           </View>
         )}

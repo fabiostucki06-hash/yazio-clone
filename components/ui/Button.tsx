@@ -14,10 +14,11 @@ interface ButtonProps {
 }
 
 const VARIANT_CLASSES: Record<Variant, string> = {
-  primary: 'bg-emerald-500 active:bg-emerald-600',
-  secondary: 'bg-slate-100 active:bg-slate-200 dark:bg-slate-700 dark:active:bg-slate-600',
-  ghost: 'bg-transparent active:bg-slate-100 dark:active:bg-slate-800',
-  danger: 'bg-red-500 active:bg-red-600',
+  primary: 'bg-emerald-500 shadow-lg shadow-emerald-500/25 active:bg-emerald-600',
+  secondary:
+    'border border-slate-200/60 bg-slate-100/70 backdrop-blur-md active:bg-slate-200/70 dark:border-white/10 dark:bg-white/5 dark:active:bg-white/10',
+  ghost: 'bg-transparent active:bg-slate-100/60 dark:active:bg-white/5',
+  danger: 'bg-red-500 shadow-lg shadow-red-500/25 active:bg-red-600',
 };
 
 const VARIANT_TEXT_CLASSES: Record<Variant, string> = {
@@ -40,7 +41,7 @@ export function Button({
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
-      className={`flex-row items-center justify-center gap-2 rounded-2xl px-5 py-3.5 ${VARIANT_CLASSES[variant]} ${
+      className={`flex-row items-center justify-center gap-2 rounded-2xl px-5 py-3.5 active:opacity-80 ${VARIANT_CLASSES[variant]} ${
         disabled || loading ? 'opacity-50' : ''
       } ${className}`}
     >

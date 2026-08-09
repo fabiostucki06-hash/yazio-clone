@@ -10,7 +10,7 @@ interface ProgressBarProps {
 export function ProgressBar({
   progress,
   color,
-  trackClassName = 'bg-slate-200 dark:bg-slate-700',
+  trackClassName = 'bg-slate-200/60 dark:bg-white/10',
   className = '',
 }: ProgressBarProps) {
   const pct = Math.min(Math.max(progress, 0), 1) * 100;

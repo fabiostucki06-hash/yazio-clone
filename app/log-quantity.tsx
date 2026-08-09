@@ -70,13 +70,13 @@ export default function LogQuantityScreen() {
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-background-dark">
       <View className="flex-row items-center justify-between px-6 pt-4">
         <View className="flex-1 pr-3">
-          <Text className="text-lg font-bold text-slate-900 dark:text-white" numberOfLines={1}>
+          <Text className="text-lg font-bold tracking-tight text-slate-900 dark:text-white" numberOfLines={1}>
             {foodItem.name}
           </Text>
           <Text className="text-xs text-slate-400">{MEAL_LABELS[mealType]}</Text>
         </View>
         <Pressable
-          className="h-9 w-9 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700"
+          className="h-9 w-9 items-center justify-center rounded-full border border-slate-200/50 bg-slate-100/60 backdrop-blur-md active:opacity-80 dark:border-white/10 dark:bg-white/5"
           onPress={handleClose}
         >
           <X color="#64748b" size={18} />

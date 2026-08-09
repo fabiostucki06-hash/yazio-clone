@@ -67,11 +67,11 @@ export default function AddFoodScreen() {
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-background-dark">
       <View className="flex-row items-center justify-between px-6 pt-4">
         <View>
-          <Text className="text-lg font-bold text-slate-900 dark:text-white">Lebensmittel hinzufügen</Text>
+          <Text className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">Lebensmittel hinzufügen</Text>
           <Text className="text-xs text-slate-400">{MEAL_LABELS[mealType]}</Text>
         </View>
         <Pressable
-          className="h-9 w-9 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700"
+          className="h-9 w-9 items-center justify-center rounded-full border border-slate-200/50 bg-slate-100/60 backdrop-blur-md active:opacity-80 dark:border-white/10 dark:bg-white/5"
           onPress={() => router.back()}
         >
           <X color="#64748b" size={18} />
@@ -79,7 +79,7 @@ export default function AddFoodScreen() {
       </View>
 
       <View className="gap-3 px-6 pt-4">
-        <View className="flex-row items-center gap-2 rounded-2xl bg-white px-4 py-3 shadow-sm dark:bg-slate-800">
+        <View className="flex-row items-center gap-2 rounded-2xl border border-white/60 bg-white/70 px-4 py-3 shadow-md shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
           <Search color="#94a3b8" size={18} />
           <TextInput
             className="flex-1 text-base text-slate-900 dark:text-white"
@@ -94,7 +94,7 @@ export default function AddFoodScreen() {
         </View>
 
         <Pressable
-          className="flex-row items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3.5"
+          className="flex-row items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3.5 shadow-lg shadow-emerald-500/25 active:opacity-90 active:bg-emerald-600"
           onPress={() => router.push({ pathname: '/barcode-scanner', params: { mealType } })}
         >
           <Barcode color="#ffffff" size={18} />
@@ -119,7 +119,7 @@ export default function AddFoodScreen() {
         }
         renderItem={({ item }) => (
           <Pressable
-            className="flex-row items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-sm dark:bg-slate-800"
+            className="flex-row items-center justify-between rounded-2xl border border-white/60 bg-white/70 px-4 py-3 shadow-md shadow-slate-900/5 backdrop-blur-xl active:opacity-80 dark:border-white/10 dark:bg-slate-900/60"
             onPress={() => handleSelect(item)}
           >
             <View className="flex-1 pr-3">

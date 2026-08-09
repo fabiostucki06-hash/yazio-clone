@@ -8,6 +8,10 @@ interface CardProps {
 
 export function Card({ children, className = '' }: CardProps) {
   return (
-    <View className={`rounded-3xl bg-white p-4 shadow-md dark:bg-slate-800 ${className}`}>{children}</View>
+    <View
+      className={`rounded-[28px] border border-white/60 bg-white/70 p-4 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60 dark:shadow-black/20 ${className}`}
+    >
+      {children}
+    </View>
   );
 }

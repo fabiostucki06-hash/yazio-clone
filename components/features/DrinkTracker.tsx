@@ -46,14 +46,14 @@ export function DrinkTracker() {
   }
 
   return (
-    <View className="gap-4 rounded-3xl bg-white p-4 shadow-md dark:bg-slate-800">
+    <View className="gap-4 rounded-[28px] border border-white/60 bg-white/70 p-4 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60 dark:shadow-black/20">
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-sky-50 dark:bg-sky-500/10">
+          <View className="h-10 w-10 items-center justify-center rounded-full bg-sky-500/10">
             <Droplet color="#0ea5e9" size={18} />
           </View>
           <View>
-            <Text className="text-sm font-semibold text-slate-900 dark:text-white">Wasser & Getränke</Text>
+            <Text className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">Wasser & Getränke</Text>
             <Text className="text-xs text-slate-400">
               {liters} L von {goalLiters} L
             </Text>
@@ -71,13 +71,16 @@ export function DrinkTracker() {
                 autoFocus
               />
             </View>
-            <Pressable className="rounded-full bg-emerald-500 px-3 py-2" onPress={handleSaveGoal}>
+            <Pressable
+              className="rounded-full bg-emerald-500 px-3 py-2 shadow-md shadow-emerald-500/30 active:opacity-90 active:bg-emerald-600"
+              onPress={handleSaveGoal}
+            >
               <Text className="text-xs font-semibold text-white">OK</Text>
             </Pressable>
           </View>
         ) : (
           <Pressable
-            className="h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700"
+            className="h-8 w-8 items-center justify-center rounded-full border border-slate-200/50 bg-slate-100/60 backdrop-blur-md active:opacity-80 dark:border-white/10 dark:bg-white/5"
             onPress={() => {
               setGoalInput(String((waterGoalMl / 1000).toFixed(1)));
               setIsEditingGoal(true);
@@ -94,8 +97,8 @@ export function DrinkTracker() {
         {DRINK_META.map(({ type, label, ml, color, Icon }) => (
           <Pressable
             key={type}
-            className="flex-1 basis-[47%] flex-row items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5"
-            style={{ backgroundColor: `${color}1a` }}
+            className="flex-1 basis-[47%] flex-row items-center justify-center gap-1.5 rounded-2xl border px-3 py-2.5 active:opacity-80"
+            style={{ backgroundColor: `${color}14`, borderColor: `${color}33` }}
             onPress={() => addDrink(date, type, ml)}
           >
             <Icon color={color} size={16} />

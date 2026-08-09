@@ -1,5 +1,6 @@
 import { BookOpen, ChartColumn, Timer, User } from 'lucide-react-native';
 import { Tabs } from 'expo-router';
+import { View } from 'react-native';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -15,9 +16,27 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: ACTIVE_COLOR,
         tabBarInactiveTintColor: isDark ? '#64748b' : '#94a3b8',
+        tabBarShowLabel: true,
+        tabBarBackground: () => (
+          <View
+            className="flex-1 overflow-hidden rounded-[28px] border border-white/60 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70"
+          />
+        ),
         tabBarStyle: {
-          backgroundColor: isDark ? '#0f172a' : '#f8fafc',
-          borderTopColor: isDark ? '#1e293b' : '#e2e8f0',
+          position: 'absolute',
+          left: 16,
+          right: 16,
+          bottom: 16,
+          height: 68,
+          paddingTop: 8,
+          borderRadius: 28,
+          borderTopWidth: 0,
+          backgroundColor: 'transparent',
+          elevation: 0,
+          shadowColor: '#0f172a',
+          shadowOpacity: isDark ? 0.4 : 0.08,
+          shadowRadius: 24,
+          shadowOffset: { width: 0, height: 8 },
         },
       }}
     >

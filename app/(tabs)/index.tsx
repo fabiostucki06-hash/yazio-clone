@@ -72,14 +72,14 @@ function MealCard({ mealType, entries }: { mealType: MealType; entries: MealEntr
   const kcal = entries.reduce((sum, entry) => sum + entry.foodItem.caloriesPerServing * entry.servings, 0);
 
   return (
-    <View className="gap-3 rounded-2xl bg-white p-4 shadow-md dark:bg-slate-800">
+    <View className="gap-3 rounded-[28px] border border-white/60 bg-white/70 p-4 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60 dark:shadow-black/20">
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-500/10">
+          <View className="h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10">
             <Icon color={ACCENT} size={18} />
           </View>
           <View>
-            <Text className="text-sm font-semibold text-slate-900 dark:text-white">{label}</Text>
+            <Text className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">{label}</Text>
             <Text className="text-xs text-slate-400">
               {entries.length > 0 ? `${Math.round(kcal)} kcal` : 'Noch keine Einträge'}
             </Text>
@@ -87,13 +87,13 @@ function MealCard({ mealType, entries }: { mealType: MealType; entries: MealEntr
         </View>
         <View className="flex-row items-center gap-2">
           <Pressable
-            className="h-8 w-8 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-500/10"
+            className="h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 active:opacity-80 active:bg-emerald-500/20"
             onPress={() => router.push({ pathname: '/analyze-food', params: { mealType } })}
           >
             <Camera color={ACCENT} size={16} />
           </Pressable>
           <Pressable
-            className="h-8 w-8 items-center justify-center rounded-full bg-emerald-500"
+            className="h-8 w-8 items-center justify-center rounded-full bg-emerald-500 shadow-md shadow-emerald-500/30 active:opacity-90 active:bg-emerald-600"
             onPress={() => router.push({ pathname: '/add-food', params: { mealType } })}
           >
             <Plus color="#ffffff" size={16} />
@@ -102,7 +102,7 @@ function MealCard({ mealType, entries }: { mealType: MealType; entries: MealEntr
       </View>
 
       {entries.length > 0 && (
-        <View className="gap-2 border-t border-slate-100 pt-3 dark:border-slate-700">
+        <View className="gap-2 border-t border-slate-200/50 pt-3 dark:border-white/10">
           {entries.map((entry) => (
             <View key={entry.id} className="flex-row items-center justify-between">
               <Text className="flex-1 text-sm text-slate-600 dark:text-slate-300" numberOfLines={1}>
@@ -173,15 +173,15 @@ export default function DiaryScreen() {
 
   return (
     <SafeAreaView className="relative flex-1 bg-slate-50 dark:bg-background-dark">
-      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 pt-4 pb-12">
+      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 pt-4 pb-32">
         <View>
-          <Text className="text-2xl font-bold text-slate-900 dark:text-white">Tagebuch</Text>
+          <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Tagebuch</Text>
           <Text className="text-sm text-slate-500 dark:text-slate-400">{today}</Text>
         </View>
 
-        <View className="items-center gap-4 rounded-3xl bg-white p-6 shadow-md dark:bg-slate-800">
+        <View className="items-center gap-4 rounded-[32px] border border-white/60 bg-white/70 p-6 shadow-2xl shadow-emerald-500/10 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
           <ProgressRing size={RING_SIZE} strokeWidth={RING_STROKE} progress={caloriePct} color={ACCENT}>
-            <Text className="text-3xl font-bold text-slate-900 dark:text-white">{Math.round(totalCalories)}</Text>
+            <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{Math.round(totalCalories)}</Text>
             <Text className="text-xs text-slate-400">von {user.dailyCalorieGoal} kcal</Text>
           </ProgressRing>
 
@@ -190,7 +190,7 @@ export default function DiaryScreen() {
           </Text>
 
           {visibleNutrients.length > 0 && (
-            <View className="w-full flex-row flex-wrap gap-x-4 gap-y-4 border-t border-slate-100 pt-4 dark:border-slate-700">
+            <View className="w-full flex-row flex-wrap gap-x-4 gap-y-4 border-t border-slate-200/50 pt-4 dark:border-white/10">
               {visibleNutrients.map((key) => (
                 <NutrientTile key={key} nutrientKey={key} amount={nutrientAmounts[key]} goal={nutrientGoals[key]} />
               ))}
@@ -210,7 +210,7 @@ export default function DiaryScreen() {
         </View>
       </ScrollView>
 
-      <Text className="absolute bottom-4 left-4 rounded-md bg-slate-50/90 px-1.5 py-0.5 text-[10px] text-slate-400 dark:bg-background-dark/90">
+      <Text className="absolute bottom-24 left-4 rounded-md bg-slate-50/90 px-1.5 py-0.5 text-[10px] text-slate-400 dark:bg-background-dark/90">
         Zuletzt aktualisiert: {getLastUpdatedLabel()} Uhr
       </Text>
     </SafeAreaView>

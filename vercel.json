@@ -1,7 +1,27 @@
 {
-  "buildCommand": "EXPO_PUBLIC_BUILD_TIME=\"$(TZ=Europe/Berlin date +'%d.%m.%Y, %H:%M')\" npx expo export --platform web",
+  "buildCommand": "EXPO_PUBLIC_BUILD_TIME=\"$(TZ=Europe/Berlin date +'%d.%m.%Y, %H:%M')\" npx expo export --platform web && node scripts/generate-build-version.js",
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/build-version.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/_expo/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
   ]
 }

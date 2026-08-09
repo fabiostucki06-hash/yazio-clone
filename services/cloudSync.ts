@@ -34,19 +34,19 @@ export function applySnapshot(snapshot: CloudSnapshot): void {
 }
 
 export async function pushSnapshot(userId: string): Promise<void> {
-  const payload = buildSnapshot();
+  const snapshot = buildSnapshot();
   const { error } = await supabase
     .from('user_data')
-    .upsert({ user_id: userId, payload, updated_at: new Date().toISOString() });
+    .upsert({ user_id: userId, data: snapshot, updated_at: new Date().toISOString() });
   if (error) throw error;
 }
 
 export async function pullSnapshot(userId: string): Promise<CloudSnapshot | null> {
   const { data, error } = await supabase
     .from('user_data')
-    .select('payload')
+    .select('data')
     .eq('user_id', userId)
     .maybeSingle();
   if (error) throw error;
-  return (data?.payload as CloudSnapshot | undefined) ?? null;
+  return (data?.data as CloudSnapshot | undefined) ?? null;
 }

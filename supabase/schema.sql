@@ -3,7 +3,7 @@
 
 create table if not exists public.user_data (
   user_id uuid primary key references auth.users (id) on delete cascade,
-  payload jsonb not null default '{}'::jsonb,
+  data jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
 

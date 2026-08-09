@@ -27,6 +27,15 @@ let autoSyncTimer: ReturnType<typeof setTimeout> | null = null;
 let unsubscribers: (() => void)[] = [];
 let lastHandledAccessToken: string | null = null;
 
+function describeSyncError(err: unknown): string {
+  console.error('[sync]', err);
+  if (err && typeof err === 'object') {
+    const { hint, message, details } = err as { hint?: string; message?: string; details?: string };
+    return hint || message || details || 'Sync fehlgeschlagen';
+  }
+  return 'Sync fehlgeschlagen';
+}
+
 function scheduleAutoSync() {
   if (applyingRemote) return;
   if (autoSyncTimer) clearTimeout(autoSyncTimer);
@@ -70,7 +79,7 @@ async function afterSessionEstablished(session: Session) {
     useSyncStore.setState({ status: 'synced', lastSyncedAt: remote ? new Date().toISOString() : null, error: null });
   } catch (err) {
     applyingRemote = false;
-    useSyncStore.setState({ status: 'error', error: err instanceof Error ? err.message : 'Sync fehlgeschlagen' });
+    useSyncStore.setState({ status: 'error', error: describeSyncError(err) });
   }
 }
 
@@ -131,7 +140,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
       await pushSnapshot(session.user.id);
       set({ status: 'synced', lastSyncedAt: new Date().toISOString() });
     } catch (err) {
-      set({ status: 'error', error: err instanceof Error ? err.message : 'Sync fehlgeschlagen' });
+      set({ status: 'error', error: describeSyncError(err) });
     }
   },
 }));

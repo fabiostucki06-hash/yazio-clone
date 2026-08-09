@@ -42,6 +42,7 @@ export default function OnboardingScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [confirmationSent, setConfirmationSent] = useState(false);
+  const [completingProfile, setCompletingProfile] = useState(false);
 
   const trimmedName = name.trim();
   const trimmedEmail = email.trim();
@@ -55,7 +56,8 @@ export default function OnboardingScreen() {
   const isBodyValid =
     Number.isFinite(parsedAge) && parsedAge > 0 && Number.isFinite(parsedHeight) && parsedHeight > 0 && Number.isFinite(parsedWeight) && parsedWeight > 0;
 
-  const isStepValid = step === 'account' ? isAccountValid : step === 'goal' ? true : isBodyValid;
+  const isStepValid =
+    step === 'account' ? isAccountValid : step === 'goal' ? (completingProfile ? trimmedName.length > 0 : true) : isBodyValid;
 
   function selectMode(nextMode: AuthMode) {
     setMode(nextMode);
@@ -76,7 +78,15 @@ export default function OnboardingScreen() {
     try {
       if (mode === 'login') {
         await signIn(trimmedEmail, password);
-        router.replace('/(tabs)');
+        if (useUserStore.getState().hasOnboarded) {
+          router.replace('/(tabs)');
+        } else {
+          // Account exists but never finished the profile setup (e.g. an earlier
+          // sign-up was interrupted before completing this wizard) — continue it
+          // now instead of dropping the user into the app with placeholder data.
+          setCompletingProfile(true);
+          setStepIndex(1);
+        }
         return;
       }
 
@@ -205,11 +215,18 @@ export default function OnboardingScreen() {
           {step === 'goal' && (
             <Card className="gap-4">
               <View className="items-center gap-1">
-                <Text className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Dein Ziel</Text>
+                <Text className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  {completingProfile ? 'Profil vervollständigen' : 'Dein Ziel'}
+                </Text>
                 <Text className="text-center text-sm text-slate-500 dark:text-slate-400">
-                  Damit berechnen wir deinen Kalorien- und Makrobedarf.
+                  {completingProfile
+                    ? 'Dein Konto hat noch keine Profildaten. Bitte gib sie einmalig ein.'
+                    : 'Damit berechnen wir deinen Kalorien- und Makrobedarf.'}
                 </Text>
               </View>
+              {completingProfile && (
+                <TextField label="Name" placeholder="Max Mustermann" value={name} onChangeText={setName} autoCapitalize="words" />
+              )}
               <ChipGroup options={GOAL_OPTIONS} selected={goal} onSelect={setGoal} />
             </Card>
           )}

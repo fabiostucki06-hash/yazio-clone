@@ -7,16 +7,18 @@ export interface CloudSnapshot {
   user: User;
   weightHistory: WeightEntry[];
   entriesByDate: Record<string, MealEntry[]>;
+  hasOnboarded: boolean;
 }
 
 export function buildSnapshot(): CloudSnapshot {
-  const { user, weightHistory } = useUserStore.getState();
+  const { user, weightHistory, hasOnboarded } = useUserStore.getState();
   const { entriesByDate } = useDiaryStore.getState();
 
   return {
     user,
     weightHistory,
     entriesByDate,
+    hasOnboarded,
   };
 }
 
@@ -24,7 +26,7 @@ export function applySnapshot(snapshot: CloudSnapshot): void {
   useUserStore.setState((state) => ({
     user: { ...state.user, ...snapshot.user },
     weightHistory: snapshot.weightHistory ?? state.weightHistory,
-    hasOnboarded: true,
+    hasOnboarded: snapshot.hasOnboarded ?? state.hasOnboarded,
   }));
   useDiaryStore.setState({
     entriesByDate: snapshot.entriesByDate ?? {},

@@ -25,6 +25,7 @@ let hasInitialized = false;
 let applyingRemote = false;
 let autoSyncTimer: ReturnType<typeof setTimeout> | null = null;
 let unsubscribers: (() => void)[] = [];
+let lastHandledAccessToken: string | null = null;
 
 function scheduleAutoSync() {
   if (applyingRemote) return;
@@ -52,6 +53,9 @@ function stopAutoSyncWatchers() {
 }
 
 async function afterSessionEstablished(session: Session) {
+  if (session.access_token === lastHandledAccessToken) return;
+  lastHandledAccessToken = session.access_token;
+
   startAutoSyncWatchers();
   try {
     const remote = await pullSnapshot(session.user.id);
@@ -59,10 +63,11 @@ async function afterSessionEstablished(session: Session) {
       applyingRemote = true;
       applySnapshot(remote);
       applyingRemote = false;
-    } else {
-      await pushSnapshot(session.user.id);
     }
-    useSyncStore.setState({ status: 'synced', lastSyncedAt: new Date().toISOString(), error: null });
+    // No remote row yet: leave local state untouched instead of pushing it as the
+    // account's canonical data — that would seed placeholder defaults into the cloud
+    // before the user has actually filled in their profile.
+    useSyncStore.setState({ status: 'synced', lastSyncedAt: remote ? new Date().toISOString() : null, error: null });
   } catch (err) {
     applyingRemote = false;
     useSyncStore.setState({ status: 'error', error: err instanceof Error ? err.message : 'Sync fehlgeschlagen' });
@@ -104,8 +109,12 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   },
 
   signIn: async (email, password) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    if (data.session) {
+      set({ session: data.session, sessionChecked: true, status: 'syncing', error: null });
+      await afterSessionEstablished(data.session);
+    }
   },
 
   signOut: async () => {

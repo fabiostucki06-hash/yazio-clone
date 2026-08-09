@@ -46,6 +46,9 @@ export interface ProfileInput {
 interface UserState {
   user: User;
   weightHistory: WeightEntry[];
+  hasOnboarded: boolean;
+  completeOnboarding: (name: string, email: string) => void;
+  updateAccount: (input: { name: string; email: string }) => void;
   updateProfile: (input: ProfileInput) => void;
   setWaterGoal: (ml: number) => void;
   addWeightEntry: (weightKg: number, date?: string) => void;
@@ -57,6 +60,20 @@ export const useUserStore = create<UserState>()(
     (set, get) => ({
       user: defaultUser,
       weightHistory: [{ id: makeId(), date: new Date().toISOString().slice(0, 10), weightKg: defaultUser.weightKg ?? 78 }],
+      hasOnboarded: false,
+
+      completeOnboarding: (name, email) => {
+        set((state) => ({
+          user: { ...state.user, name: name.trim(), email: email.trim() },
+          hasOnboarded: true,
+        }));
+      },
+
+      updateAccount: (input) => {
+        set((state) => ({
+          user: { ...state.user, name: input.name.trim(), email: input.email.trim() },
+        }));
+      },
 
       updateProfile: (input) => {
         const bmr = calculateBMR({
@@ -124,12 +141,14 @@ export const useUserStore = create<UserState>()(
     {
       name: 'yazio-user-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 2,
-      migrate: (persistedState) => {
+      version: 3,
+      migrate: (persistedState, version) => {
         const state = persistedState as UserState;
         return {
           ...state,
           user: { ...defaultUser, ...state?.user, visibleNutrients: state?.user?.visibleNutrients ?? DEFAULT_VISIBLE_NUTRIENTS },
+          // Users persisted before onboarding existed already have a profile, so don't force them through it.
+          hasOnboarded: version >= 3 ? (state?.hasOnboarded ?? false) : true,
         };
       },
     },

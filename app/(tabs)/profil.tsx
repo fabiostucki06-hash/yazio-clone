@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CloudSyncCard } from '@/components/features/CloudSyncCard';
 import { NUTRIENT_META, NUTRIENT_ORDER } from '@/components/features/nutrientMeta';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -78,13 +79,18 @@ function ChipGroup<T extends string>({
   );
 }
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function ProfilScreen() {
   const user = useUserStore((state) => state.user);
   const weightHistory = useUserStore((state) => state.weightHistory);
+  const updateAccount = useUserStore((state) => state.updateAccount);
   const updateProfile = useUserStore((state) => state.updateProfile);
   const addWeightEntry = useUserStore((state) => state.addWeightEntry);
   const toggleNutrientVisibility = useUserStore((state) => state.toggleNutrientVisibility);
 
+  const [name, setName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
   const [age, setAge] = useState(String(user.age ?? 30));
   const [gender, setGender] = useState<Gender>(user.gender ?? 'male');
   const [heightCm, setHeightCm] = useState(String(user.heightCm ?? 180));
@@ -101,9 +107,19 @@ export default function ProfilScreen() {
   const isFormValid =
     Number.isFinite(parsedAge) && parsedAge > 0 && Number.isFinite(parsedHeight) && parsedHeight > 0 && Number.isFinite(parsedWeight) && parsedWeight > 0;
 
+  const trimmedName = name.trim();
+  const trimmedEmail = email.trim();
+  const isAccountValid = trimmedName.length > 0 && EMAIL_PATTERN.test(trimmedEmail);
+  const isAccountDirty = trimmedName !== user.name || trimmedEmail !== user.email;
+
   function handleSaveProfile() {
     if (!isFormValid) return;
     updateProfile({ age: parsedAge, gender, heightCm: parsedHeight, weightKg: parsedWeight, activityLevel, goal });
+  }
+
+  function handleSaveAccount() {
+    if (!isAccountValid) return;
+    updateAccount({ name: trimmedName, email: trimmedEmail });
   }
 
   function handleAddWeight() {
@@ -125,13 +141,35 @@ export default function ProfilScreen() {
 
         <View className="items-center gap-3 rounded-[28px] border border-white/60 bg-white/70 py-6 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30">
-            <Text className="text-2xl font-bold text-white">{initial}</Text>
+            <Text className="text-2xl font-bold text-white">{initial || '?'}</Text>
           </View>
           <View className="items-center">
-            <Text className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">{user.name}</Text>
-            <Text className="text-sm text-slate-500 dark:text-slate-400">{user.email}</Text>
+            <Text className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">{user.name || 'Ohne Namen'}</Text>
+            <Text className="text-sm text-slate-500 dark:text-slate-400">{user.email || 'Keine E-Mail hinterlegt'}</Text>
           </View>
         </View>
+
+        <Card className="gap-4">
+          <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Konto</Text>
+          <TextField label="Name" value={name} onChangeText={setName} autoCapitalize="words" placeholder="Max Mustermann" />
+          <TextField
+            label="E-Mail-Adresse"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            placeholder="max@beispiel.de"
+          />
+          <Button
+            label="Konto speichern"
+            variant="secondary"
+            onPress={handleSaveAccount}
+            disabled={!isAccountValid || !isAccountDirty}
+          />
+        </Card>
+
+        <CloudSyncCard />
 
         <View className="gap-2">
           <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Ziele</Text>

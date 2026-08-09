@@ -23,6 +23,10 @@ interface OffNutriments {
   proteins_100g?: number;
   carbohydrates_100g?: number;
   fat_100g?: number;
+  fiber_100g?: number;
+  sugars_100g?: number;
+  sodium_100g?: number;
+  'vitamin-c_100g'?: number;
 }
 
 interface OffProduct {
@@ -56,6 +60,12 @@ function normalizeFoodItem(product: OffProduct, fallbackId: string): FoodItem {
       carbs: nutriments.carbohydrates_100g ?? 0,
       protein: nutriments.proteins_100g ?? 0,
       fat: nutriments.fat_100g ?? 0,
+    },
+    micronutrientsPerServing: {
+      fiber: nutriments.fiber_100g ?? 0,
+      sugar: nutriments.sugars_100g ?? 0,
+      sodium: (nutriments.sodium_100g ?? 0) * 1000,
+      vitaminC: (nutriments['vitamin-c_100g'] ?? 0) * 1000,
     },
     servingSize: 100,
     servingUnit: 'g',

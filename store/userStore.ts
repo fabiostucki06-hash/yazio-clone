@@ -2,12 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import type { User, WeightEntry } from '@/types';
+import type { NutrientKey, User, WeightEntry } from '@/types';
 import {
   calculateBMR,
   calculateDailyTargets,
   calculateMacros,
   calculateTDEE,
+  DEFAULT_VISIBLE_NUTRIENTS,
   type ActivityLevel,
   type Gender,
   type Goal,
@@ -29,7 +30,8 @@ const defaultUser: User = {
   gender: 'male',
   activityLevel: 'moderate',
   goal: 'maintain',
-  waterGoalMl: 2000,
+  waterGoalMl: 2500,
+  visibleNutrients: DEFAULT_VISIBLE_NUTRIENTS,
 };
 
 export interface ProfileInput {
@@ -47,6 +49,7 @@ interface UserState {
   updateProfile: (input: ProfileInput) => void;
   setWaterGoal: (ml: number) => void;
   addWeightEntry: (weightKg: number, date?: string) => void;
+  toggleNutrientVisibility: (key: NutrientKey) => void;
 }
 
 export const useUserStore = create<UserState>()(
@@ -92,6 +95,18 @@ export const useUserStore = create<UserState>()(
         set((state) => ({ user: { ...state.user, waterGoalMl: ml } }));
       },
 
+      toggleNutrientVisibility: (key) => {
+        set((state) => ({
+          user: {
+            ...state.user,
+            visibleNutrients: {
+              ...state.user.visibleNutrients,
+              [key]: !state.user.visibleNutrients[key],
+            },
+          },
+        }));
+      },
+
       addWeightEntry: (weightKg, date) => {
         const entryDate = date ?? new Date().toISOString().slice(0, 10);
         set((state) => {
@@ -109,6 +124,14 @@ export const useUserStore = create<UserState>()(
     {
       name: 'yazio-user-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      version: 2,
+      migrate: (persistedState) => {
+        const state = persistedState as UserState;
+        return {
+          ...state,
+          user: { ...defaultUser, ...state?.user, visibleNutrients: state?.user?.visibleNutrients ?? DEFAULT_VISIBLE_NUTRIENTS },
+        };
+      },
     },
   ),
 );

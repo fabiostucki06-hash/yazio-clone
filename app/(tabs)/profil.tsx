@@ -1,8 +1,9 @@
 import { Droplet, Egg, Plus, Scale, Target, Wheat } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { NUTRIENT_META, NUTRIENT_ORDER } from '@/components/features/nutrientMeta';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { LineChart } from '@/components/ui/LineChart';
@@ -82,6 +83,7 @@ export default function ProfilScreen() {
   const weightHistory = useUserStore((state) => state.weightHistory);
   const updateProfile = useUserStore((state) => state.updateProfile);
   const addWeightEntry = useUserStore((state) => state.addWeightEntry);
+  const toggleNutrientVisibility = useUserStore((state) => state.toggleNutrientVisibility);
 
   const [age, setAge] = useState(String(user.age ?? 30));
   const [gender, setGender] = useState<Gender>(user.gender ?? 'male');
@@ -161,6 +163,33 @@ export default function ProfilScreen() {
           <ChipGroup options={ACTIVITY_OPTIONS} selected={activityLevel} onSelect={setActivityLevel} />
 
           <Button label="BMR/TDEE berechnen & speichern" onPress={handleSaveProfile} disabled={!isFormValid} className="mt-2" />
+        </Card>
+
+        <Card className="gap-1">
+          <Text className="pb-2 text-sm font-semibold text-slate-500 dark:text-slate-400">Sichtbare Nährstoffe</Text>
+          {NUTRIENT_ORDER.map((key, index) => {
+            const { label, Icon, color } = NUTRIENT_META[key];
+            const isVisible = user.visibleNutrients[key];
+            return (
+              <View
+                key={key}
+                className={`flex-row items-center justify-between py-3 ${
+                  index > 0 ? 'border-t border-slate-100 dark:border-slate-700' : ''
+                }`}
+              >
+                <View className="flex-row items-center gap-3">
+                  <Icon color={color} size={18} />
+                  <Text className="text-sm text-slate-700 dark:text-slate-200">{label}</Text>
+                </View>
+                <Switch
+                  value={isVisible}
+                  onValueChange={() => toggleNutrientVisibility(key)}
+                  trackColor={{ false: '#cbd5e1', true: '#10b981' }}
+                  thumbColor="#ffffff"
+                />
+              </View>
+            );
+          })}
         </Card>
 
         <Card className="gap-4">

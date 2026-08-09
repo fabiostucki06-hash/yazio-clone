@@ -1,4 +1,4 @@
-import type { Macros } from '../types';
+import type { Macros, Micronutrients, NutrientVisibility } from '../types';
 
 export type Gender = 'male' | 'female';
 export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active';
@@ -64,3 +64,21 @@ export function calculateMacros(calories: number): Macros {
     fat: Math.round((calories * MACRO_SPLIT.fat.ratio) / MACRO_SPLIT.fat.kcalPerGram),
   };
 }
+
+/** Reference daily intake used as the progress-bar goal for each micronutrient. */
+export const MICRONUTRIENT_GOALS: Micronutrients = {
+  fiber: 30,
+  sugar: 50,
+  sodium: 2300,
+  vitaminC: 90,
+};
+
+export const DEFAULT_VISIBLE_NUTRIENTS: NutrientVisibility = {
+  carbs: true,
+  protein: true,
+  fat: true,
+  fiber: false,
+  sugar: false,
+  sodium: false,
+  vitaminC: false,
+};

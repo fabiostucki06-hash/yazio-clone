@@ -1,13 +1,17 @@
 import { router } from 'expo-router';
-import { Coffee, Cookie, Droplet, Egg, Moon, Plus, UtensilsCrossed, Wheat } from 'lucide-react-native';
+import { Coffee, Cookie, Moon, Plus, UtensilsCrossed } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AiRecommendationCard } from '@/components/features/AiRecommendationCard';
+import { DrinkTracker } from '@/components/features/DrinkTracker';
+import { NUTRIENT_META, NUTRIENT_ORDER } from '@/components/features/nutrientMeta';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { useDiaryStore, todayKey } from '@/store/diaryStore';
 import { useUserStore } from '@/store/userStore';
-import type { MealEntry, MealType } from '@/types';
+import type { Macros, MealEntry, MealType, Micronutrients, NutrientKey } from '@/types';
+import { MICRONUTRIENT_GOALS } from '@/utils/nutritionCalculator';
 
 interface IconProps {
   color?: string;
@@ -26,7 +30,6 @@ const MEAL_TYPE_META: Record<MealType, { label: string; Icon: ComponentType<Icon
 const ACCENT = '#10b981';
 const RING_SIZE = 176;
 const RING_STROKE = 16;
-const WATER_QUICK_ADD_ML = 250;
 const EMPTY_ENTRIES: MealEntry[] = [];
 
 function getLastUpdatedLabel(): string {
@@ -43,29 +46,19 @@ function getLastUpdatedLabel(): string {
   });
 }
 
-function MacroRow({
-  icon,
-  label,
-  grams,
-  goalGrams,
-  color,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  grams: number;
-  goalGrams: number;
-  color: string;
-}) {
-  const pct = goalGrams > 0 ? Math.min(Math.round((grams / goalGrams) * 100), 100) : 0;
+function NutrientTile({ nutrientKey, amount, goal }: { nutrientKey: NutrientKey; amount: number; goal: number }) {
+  const { label, unit, color, Icon } = NUTRIENT_META[nutrientKey];
+  const pct = goal > 0 ? Math.min(Math.round((amount / goal) * 100), 100) : 0;
 
   return (
-    <View className="flex-1 gap-2">
+    <View className="basis-[30%] gap-2">
       <View className="flex-row items-center gap-1.5">
-        {icon}
+        <Icon color={color} size={14} />
         <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</Text>
       </View>
       <Text className="text-sm font-semibold text-slate-900 dark:text-white">
-        {Math.round(grams)}g <Text className="text-xs font-normal text-slate-400">/ {goalGrams}g</Text>
+        {Math.round(amount)}
+        {unit} <Text className="text-xs font-normal text-slate-400">/ {Math.round(goal)}{unit}</Text>
       </Text>
       <View className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700">
         <View className="h-1.5 rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
@@ -118,44 +111,6 @@ function MealCard({ mealType, entries }: { mealType: MealType; entries: MealEntr
   );
 }
 
-function WaterTracker() {
-  const date = todayKey();
-  const waterMl = useDiaryStore((state) => state.getWaterForDate(date));
-  const addWater = useDiaryStore((state) => state.addWater);
-  const waterGoalMl = useUserStore((state) => state.user.waterGoalMl ?? 2000);
-  const pct = waterGoalMl > 0 ? Math.min(waterMl / waterGoalMl, 1) : 0;
-  const liters = (waterMl / 1000).toFixed(2);
-  const goalLiters = (waterGoalMl / 1000).toFixed(1);
-
-  return (
-    <View className="gap-3 rounded-2xl bg-white p-4 shadow-md dark:bg-slate-800">
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center gap-3">
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-sky-50 dark:bg-sky-500/10">
-            <Droplet color="#0ea5e9" size={18} />
-          </View>
-          <View>
-            <Text className="text-sm font-semibold text-slate-900 dark:text-white">Wasser</Text>
-            <Text className="text-xs text-slate-400">
-              {liters} L von {goalLiters} L
-            </Text>
-          </View>
-        </View>
-        <Pressable
-          className="flex-row items-center gap-1 rounded-full bg-sky-500 px-3 py-1.5"
-          onPress={() => addWater(date, WATER_QUICK_ADD_ML)}
-        >
-          <Plus color="#ffffff" size={14} />
-          <Text className="text-xs font-semibold text-white">{WATER_QUICK_ADD_ML}ml</Text>
-        </Pressable>
-      </View>
-      <View className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700">
-        <View className="h-1.5 rounded-full bg-sky-500" style={{ width: `${pct * 100}%` }} />
-      </View>
-    </View>
-  );
-}
-
 export default function DiaryScreen() {
   const date = todayKey();
   const entries = useDiaryStore((state) => state.entriesByDate[date] ?? EMPTY_ENTRIES);
@@ -178,7 +133,7 @@ export default function DiaryScreen() {
   }
 
   const totalCalories = entries.reduce((sum, entry) => sum + entry.foodItem.caloriesPerServing * entry.servings, 0);
-  const totalMacros = entries.reduce(
+  const totalMacros: Macros = entries.reduce(
     (acc, entry) => ({
       carbs: acc.carbs + entry.foodItem.macrosPerServing.carbs * entry.servings,
       protein: acc.protein + entry.foodItem.macrosPerServing.protein * entry.servings,
@@ -186,9 +141,27 @@ export default function DiaryScreen() {
     }),
     { carbs: 0, protein: 0, fat: 0 },
   );
+  const totalMicros: Micronutrients = entries.reduce(
+    (acc, entry) => ({
+      fiber: acc.fiber + entry.foodItem.micronutrientsPerServing.fiber * entry.servings,
+      sugar: acc.sugar + entry.foodItem.micronutrientsPerServing.sugar * entry.servings,
+      sodium: acc.sodium + entry.foodItem.micronutrientsPerServing.sodium * entry.servings,
+      vitaminC: acc.vitaminC + entry.foodItem.micronutrientsPerServing.vitaminC * entry.servings,
+    }),
+    { fiber: 0, sugar: 0, sodium: 0, vitaminC: 0 },
+  );
+
+  const nutrientAmounts: Record<NutrientKey, number> = { ...totalMacros, ...totalMicros };
+  const nutrientGoals: Record<NutrientKey, number> = { ...user.dailyMacroGoal, ...MICRONUTRIENT_GOALS };
+  const visibleNutrients = NUTRIENT_ORDER.filter((key) => user.visibleNutrients[key]);
 
   const remainingCalories = Math.round(Math.max(user.dailyCalorieGoal - totalCalories, 0));
   const caloriePct = user.dailyCalorieGoal > 0 ? totalCalories / user.dailyCalorieGoal : 0;
+  const remainingMacros: Macros = {
+    carbs: Math.max(user.dailyMacroGoal.carbs - totalMacros.carbs, 0),
+    protein: Math.max(user.dailyMacroGoal.protein - totalMacros.protein, 0),
+    fat: Math.max(user.dailyMacroGoal.fat - totalMacros.fat, 0),
+  };
 
   return (
     <SafeAreaView className="relative flex-1 bg-slate-50 dark:bg-background-dark">
@@ -208,32 +181,18 @@ export default function DiaryScreen() {
             {remainingCalories} kcal übrig
           </Text>
 
-          <View className="w-full flex-row gap-4 border-t border-slate-100 pt-4 dark:border-slate-700">
-            <MacroRow
-              icon={<Wheat color="#3b82f6" size={14} />}
-              label="Carbs"
-              grams={totalMacros.carbs}
-              goalGrams={user.dailyMacroGoal.carbs}
-              color="#3b82f6"
-            />
-            <MacroRow
-              icon={<Egg color="#ef4444" size={14} />}
-              label="Protein"
-              grams={totalMacros.protein}
-              goalGrams={user.dailyMacroGoal.protein}
-              color="#ef4444"
-            />
-            <MacroRow
-              icon={<Droplet color="#f59e0b" size={14} />}
-              label="Fett"
-              grams={totalMacros.fat}
-              goalGrams={user.dailyMacroGoal.fat}
-              color="#f59e0b"
-            />
-          </View>
+          {visibleNutrients.length > 0 && (
+            <View className="w-full flex-row flex-wrap gap-x-4 gap-y-4 border-t border-slate-100 pt-4 dark:border-slate-700">
+              {visibleNutrients.map((key) => (
+                <NutrientTile key={key} nutrientKey={key} amount={nutrientAmounts[key]} goal={nutrientGoals[key]} />
+              ))}
+            </View>
+          )}
         </View>
 
-        <WaterTracker />
+        <AiRecommendationCard remainingCalories={remainingCalories} remainingMacros={remainingMacros} />
+
+        <DrinkTracker />
 
         <View className="gap-3">
           <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Mahlzeiten</Text>

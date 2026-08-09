@@ -6,6 +6,17 @@ export interface Macros {
   fat: number;
 }
 
+export interface Micronutrients {
+  fiber: number;
+  sugar: number;
+  sodium: number;
+  vitaminC: number;
+}
+
+export type NutrientKey = keyof Macros | keyof Micronutrients;
+
+export type NutrientVisibility = Record<NutrientKey, boolean>;
+
 export interface User {
   id: string;
   name: string;
@@ -19,6 +30,7 @@ export interface User {
   activityLevel?: ActivityLevel;
   goal?: Goal;
   waterGoalMl?: number;
+  visibleNutrients: NutrientVisibility;
 }
 
 export interface FoodItem {
@@ -27,6 +39,7 @@ export interface FoodItem {
   brand?: string;
   caloriesPerServing: number;
   macrosPerServing: Macros;
+  micronutrientsPerServing: Micronutrients;
   servingSize: number;
   servingUnit: string;
 }
@@ -69,4 +82,13 @@ export interface FastingSession {
   planId: FastingPlanId;
   startedAt: string;
   isFasting: boolean;
+}
+
+export type DrinkType = 'water' | 'coffee' | 'juice' | 'soda';
+
+export interface DrinkEntry {
+  id: string;
+  type: DrinkType;
+  ml: number;
+  loggedAt: string;
 }

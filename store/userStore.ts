@@ -133,7 +133,7 @@ export const useUserStore = create<UserState>()(
       },
     }),
     {
-      name: 'yazio-user-storage',
+      name: 'coach-imi-user-storage',
       storage: createJSONStorage(() => AsyncStorage),
       version: 3,
       migrate: (persistedState, version) => {

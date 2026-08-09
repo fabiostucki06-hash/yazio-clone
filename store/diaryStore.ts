@@ -54,7 +54,7 @@ export const useDiaryStore = create<DiaryState>()(
       getEntriesForDate: (date) => get().entriesByDate[date] ?? EMPTY_ENTRIES,
     }),
     {
-      name: 'yazio-diary-storage',
+      name: 'coach-imi-diary-storage',
       storage: createJSONStorage(() => AsyncStorage),
       version: 3,
       migrate: (persistedState) => {

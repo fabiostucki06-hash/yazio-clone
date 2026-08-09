@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Coffee, Cookie, Moon, Plus, UtensilsCrossed } from 'lucide-react-native';
+import { Camera, Coffee, Cookie, Moon, Plus, UtensilsCrossed } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -85,12 +85,20 @@ function MealCard({ mealType, entries }: { mealType: MealType; entries: MealEntr
             </Text>
           </View>
         </View>
-        <Pressable
-          className="h-8 w-8 items-center justify-center rounded-full bg-emerald-500"
-          onPress={() => router.push({ pathname: '/add-food', params: { mealType } })}
-        >
-          <Plus color="#ffffff" size={16} />
-        </Pressable>
+        <View className="flex-row items-center gap-2">
+          <Pressable
+            className="h-8 w-8 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-500/10"
+            onPress={() => router.push({ pathname: '/analyze-food', params: { mealType } })}
+          >
+            <Camera color={ACCENT} size={16} />
+          </Pressable>
+          <Pressable
+            className="h-8 w-8 items-center justify-center rounded-full bg-emerald-500"
+            onPress={() => router.push({ pathname: '/add-food', params: { mealType } })}
+          >
+            <Plus color="#ffffff" size={16} />
+          </Pressable>
+        </View>
       </View>
 
       {entries.length > 0 && (

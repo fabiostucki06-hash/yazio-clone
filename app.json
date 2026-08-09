@@ -38,6 +38,13 @@
         {
           "cameraPermission": "Die Kamera wird verwendet, um Barcodes von Lebensmitteln zu scannen."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Der Fotozugriff wird verwendet, um Mahlzeiten-Fotos für die KI-Nährwertanalyse auszuwählen.",
+          "cameraPermission": "Die Kamera wird verwendet, um Fotos von Mahlzeiten für die KI-Nährwertanalyse aufzunehmen."
+        }
       ]
     ],
     "experiments": {

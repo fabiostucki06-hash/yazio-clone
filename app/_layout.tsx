@@ -9,6 +9,7 @@ export default function RootLayout() {
       <Stack.Screen name="add-food" options={{ presentation: 'modal' }} />
       <Stack.Screen name="barcode-scanner" options={{ presentation: 'modal' }} />
       <Stack.Screen name="log-quantity" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="analyze-food" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }

@@ -31,7 +31,7 @@ function scheduleAutoSync() {
   if (autoSyncTimer) clearTimeout(autoSyncTimer);
   autoSyncTimer = setTimeout(() => {
     useSyncStore.getState().syncNow();
-  }, 1500);
+  }, 200);
 }
 
 function startAutoSyncWatchers() {

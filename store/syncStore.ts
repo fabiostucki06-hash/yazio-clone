@@ -11,6 +11,7 @@ export type SyncStatus = 'offline' | 'syncing' | 'synced' | 'error';
 
 interface SyncState {
   session: Session | null;
+  sessionChecked: boolean;
   status: SyncStatus;
   error: string | null;
   lastSyncedAt: string | null;
@@ -72,6 +73,7 @@ async function afterSessionEstablished(session: Session) {
 
 export const useSyncStore = create<SyncState>((set, get) => ({
   session: null,
+  sessionChecked: false,
   status: 'offline',
   error: null,
   lastSyncedAt: null,
@@ -81,7 +83,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     hasInitialized = true;
 
     supabase.auth.onAuthStateChange((_event, session) => {
-      set({ session });
+      set({ session, sessionChecked: true });
       if (session) {
         set({ status: 'syncing', error: null });
         afterSessionEstablished(session);

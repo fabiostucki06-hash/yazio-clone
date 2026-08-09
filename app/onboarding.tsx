@@ -8,6 +8,8 @@ import { ACTIVITY_OPTIONS, ChipGroup, GENDER_OPTIONS, GOAL_OPTIONS } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/TextField';
+import { pushSnapshot } from '@/services/cloudSync';
+import { useSyncStore } from '@/store/syncStore';
 import { useUserStore } from '@/store/userStore';
 import type { ActivityLevel, Gender, Goal } from '@/utils/nutritionCalculator';
 
@@ -15,16 +17,21 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const STEPS = ['account', 'goal', 'body'] as const;
 type Step = (typeof STEPS)[number];
+type AuthMode = 'signUp' | 'login';
 
 export default function OnboardingScreen() {
   const completeOnboarding = useUserStore((state) => state.completeOnboarding);
   const updateProfile = useUserStore((state) => state.updateProfile);
+  const signUp = useSyncStore((state) => state.signUp);
+  const signIn = useSyncStore((state) => state.signIn);
 
+  const [mode, setMode] = useState<AuthMode>('signUp');
   const [stepIndex, setStepIndex] = useState(0);
   const step: Step = STEPS[stepIndex];
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [goal, setGoal] = useState<Goal>('maintain');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState<Gender>('male');
@@ -32,9 +39,15 @@ export default function OnboardingScreen() {
   const [weightKg, setWeightKg] = useState('');
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>('moderate');
 
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [confirmationSent, setConfirmationSent] = useState(false);
+
   const trimmedName = name.trim();
   const trimmedEmail = email.trim();
-  const isAccountValid = trimmedName.length > 0 && EMAIL_PATTERN.test(trimmedEmail);
+  const isEmailValid = EMAIL_PATTERN.test(trimmedEmail);
+  const isAccountValid =
+    mode === 'signUp' ? trimmedName.length > 0 && isEmailValid && password.length >= 6 : isEmailValid && password.length >= 6;
 
   const parsedAge = Number.parseInt(age, 10);
   const parsedHeight = Number.parseFloat(heightCm.replace(',', '.'));
@@ -44,21 +57,65 @@ export default function OnboardingScreen() {
 
   const isStepValid = step === 'account' ? isAccountValid : step === 'goal' ? true : isBodyValid;
 
+  function selectMode(nextMode: AuthMode) {
+    setMode(nextMode);
+    setFormError(null);
+    setConfirmationSent(false);
+  }
+
   function handleBack() {
-    if (stepIndex === 0) return;
+    if (stepIndex < 2) return;
     setStepIndex((index) => index - 1);
+  }
+
+  async function handleAccountSubmit() {
+    if (!isAccountValid || submitting) return;
+    setSubmitting(true);
+    setFormError(null);
+    setConfirmationSent(false);
+    try {
+      if (mode === 'login') {
+        await signIn(trimmedEmail, password);
+        router.replace('/(tabs)');
+        return;
+      }
+
+      const { needsEmailConfirmation } = await signUp(trimmedEmail, password);
+      if (needsEmailConfirmation) {
+        setConfirmationSent(true);
+        setMode('login');
+        return;
+      }
+      setStepIndex(1);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Etwas ist schiefgelaufen.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function handleFinish() {
+    if (!isBodyValid) return;
+    completeOnboarding(trimmedName, trimmedEmail);
+    updateProfile({ age: parsedAge, gender, heightCm: parsedHeight, weightKg: parsedWeight, activityLevel, goal });
+
+    const session = useSyncStore.getState().session;
+    if (session) pushSnapshot(session.user.id).catch(() => {});
+
+    router.replace('/(tabs)');
   }
 
   function handleNext() {
     if (!isStepValid) return;
+    if (step === 'account') {
+      handleAccountSubmit();
+      return;
+    }
     if (stepIndex < STEPS.length - 1) {
       setStepIndex((index) => index + 1);
       return;
     }
-
-    completeOnboarding(trimmedName, trimmedEmail);
-    updateProfile({ age: parsedAge, gender, heightCm: parsedHeight, weightKg: parsedWeight, activityLevel, goal });
-    router.replace('/(tabs)');
+    handleFinish();
   }
 
   return (
@@ -69,25 +126,61 @@ export default function OnboardingScreen() {
             <View className="h-20 w-20 items-center justify-center rounded-[28px] bg-emerald-500 shadow-lg shadow-emerald-500/30">
               <Sparkles color="#ffffff" size={32} />
             </View>
-            <View className="flex-row gap-2">
-              {STEPS.map((s, index) => (
-                <View
-                  key={s}
-                  className={`h-1.5 w-8 rounded-full ${index <= stepIndex ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`}
-                />
-              ))}
-            </View>
+            {!(step === 'account' && mode === 'login') && (
+              <View className="flex-row gap-2">
+                {STEPS.map((s, index) => (
+                  <View
+                    key={s}
+                    className={`h-1.5 w-8 rounded-full ${index <= stepIndex ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                  />
+                ))}
+              </View>
+            )}
           </View>
 
           {step === 'account' && (
             <Card className="gap-4">
               <View className="items-center gap-1">
-                <Text className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Willkommen</Text>
+                <Text className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  {mode === 'signUp' ? 'Konto erstellen' : 'Willkommen zurück'}
+                </Text>
                 <Text className="text-center text-sm text-slate-500 dark:text-slate-400">
-                  Erstelle dein Profil, damit dein Fortschritt gespeichert wird.
+                  {mode === 'signUp'
+                    ? 'Erstelle ein Konto, damit dein Fortschritt in der Cloud gespeichert wird.'
+                    : 'Melde dich mit deinem bestehenden Konto an.'}
                 </Text>
               </View>
-              <TextField label="Name" placeholder="Max Mustermann" value={name} onChangeText={setName} autoCapitalize="words" />
+
+              <View className="flex-row gap-2">
+                <Pressable
+                  onPress={() => selectMode('signUp')}
+                  className={`flex-1 items-center rounded-full border px-4 py-2 ${
+                    mode === 'signUp' ? 'border-emerald-500/60 bg-emerald-500/10' : 'border-white/60 bg-white/70 dark:border-white/10 dark:bg-white/5'
+                  }`}
+                >
+                  <Text
+                    className={`text-sm font-medium ${mode === 'signUp' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}
+                  >
+                    Registrieren
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => selectMode('login')}
+                  className={`flex-1 items-center rounded-full border px-4 py-2 ${
+                    mode === 'login' ? 'border-emerald-500/60 bg-emerald-500/10' : 'border-white/60 bg-white/70 dark:border-white/10 dark:bg-white/5'
+                  }`}
+                >
+                  <Text
+                    className={`text-sm font-medium ${mode === 'login' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'}`}
+                  >
+                    Anmelden
+                  </Text>
+                </Pressable>
+              </View>
+
+              {mode === 'signUp' && (
+                <TextField label="Name" placeholder="Max Mustermann" value={name} onChangeText={setName} autoCapitalize="words" />
+              )}
               <TextField
                 label="E-Mail-Adresse"
                 placeholder="max@beispiel.de"
@@ -97,6 +190,14 @@ export default function OnboardingScreen() {
                 autoCorrect={false}
                 keyboardType="email-address"
               />
+              <TextField label="Passwort" placeholder="Mind. 6 Zeichen" value={password} onChangeText={setPassword} secureTextEntry />
+
+              {formError && <Text className="text-xs text-red-500">{formError}</Text>}
+              {confirmationSent && (
+                <Text className="text-xs text-emerald-600 dark:text-emerald-400">
+                  Bestätige deine E-Mail-Adresse über den Link, den wir dir geschickt haben, und melde dich anschließend an.
+                </Text>
+              )}
             </Card>
           )}
 
@@ -143,7 +244,7 @@ export default function OnboardingScreen() {
           </Text>
 
           <View className="flex-row gap-3">
-            {stepIndex > 0 && (
+            {stepIndex >= 2 && (
               <Pressable
                 onPress={handleBack}
                 className="h-[54px] w-[54px] items-center justify-center rounded-2xl border border-white/60 bg-white/70 backdrop-blur-md active:opacity-80 dark:border-white/10 dark:bg-white/5"
@@ -152,9 +253,10 @@ export default function OnboardingScreen() {
               </Pressable>
             )}
             <Button
-              label={stepIndex < STEPS.length - 1 ? 'Weiter' : "Los geht's"}
+              label={step === 'account' ? (mode === 'signUp' ? 'Konto erstellen' : 'Anmelden') : stepIndex < STEPS.length - 1 ? 'Weiter' : "Los geht's"}
               onPress={handleNext}
-              disabled={!isStepValid}
+              disabled={!isStepValid || submitting}
+              loading={submitting}
               className="flex-1"
             />
           </View>

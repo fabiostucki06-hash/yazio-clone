@@ -1,10 +1,12 @@
 import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 
+import { useSyncStore } from '@/store/syncStore';
 import { useUserStore } from '@/store/userStore';
 
 export default function Index() {
-  const hasOnboarded = useUserStore((state) => state.hasOnboarded);
+  const session = useSyncStore((state) => state.session);
+  const sessionChecked = useSyncStore((state) => state.sessionChecked);
   const [hasHydrated, setHasHydrated] = useState(useUserStore.persist.hasHydrated());
 
   useEffect(() => {
@@ -12,7 +14,7 @@ export default function Index() {
     return useUserStore.persist.onFinishHydration(() => setHasHydrated(true));
   }, [hasHydrated]);
 
-  if (!hasHydrated) return null;
+  if (!hasHydrated || !sessionChecked) return null;
 
-  return <Redirect href={hasOnboarded ? '/(tabs)' : '/onboarding'} />;
+  return <Redirect href={session ? '/(tabs)' : '/onboarding'} />;
 }

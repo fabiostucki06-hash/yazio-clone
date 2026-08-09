@@ -4,7 +4,6 @@ import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
 import { applySnapshot, pullSnapshot, pushSnapshot } from '@/services/cloudSync';
 import { useDiaryStore } from '@/store/diaryStore';
-import { useFastingStore } from '@/store/fastingStore';
 import { useUserStore } from '@/store/userStore';
 
 export type SyncStatus = 'offline' | 'syncing' | 'synced' | 'error';
@@ -40,7 +39,6 @@ function startAutoSyncWatchers() {
   unsubscribers = [
     useUserStore.subscribe(scheduleAutoSync),
     useDiaryStore.subscribe(scheduleAutoSync),
-    useFastingStore.subscribe(scheduleAutoSync),
   ];
 }
 

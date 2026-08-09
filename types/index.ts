@@ -69,21 +69,6 @@ export interface WeightEntry {
   weightKg: number;
 }
 
-export type FastingPlanId = '16:8' | '14:10' | '5:2';
-
-export interface FastingPlan {
-  id: FastingPlanId;
-  label: string;
-  fastingHours: number;
-  eatingHours: number;
-}
-
-export interface FastingSession {
-  planId: FastingPlanId;
-  startedAt: string;
-  isFasting: boolean;
-}
-
 export type DrinkType = 'water' | 'coffee' | 'juice' | 'soda';
 
 export interface DrinkEntry {

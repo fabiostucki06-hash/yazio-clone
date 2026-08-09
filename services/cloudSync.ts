@@ -1,30 +1,24 @@
 import { supabase } from '@/lib/supabase';
 import { useDiaryStore } from '@/store/diaryStore';
-import { useFastingStore } from '@/store/fastingStore';
 import { useUserStore } from '@/store/userStore';
-import type { DrinkEntry, FastingPlanId, FastingSession, MealEntry, User, WeightEntry } from '@/types';
+import type { DrinkEntry, MealEntry, User, WeightEntry } from '@/types';
 
 export interface CloudSnapshot {
   user: User;
   weightHistory: WeightEntry[];
   entriesByDate: Record<string, MealEntry[]>;
   drinkEntriesByDate: Record<string, DrinkEntry[]>;
-  selectedPlanId: FastingPlanId;
-  fastingSession: FastingSession | null;
 }
 
 export function buildSnapshot(): CloudSnapshot {
   const { user, weightHistory } = useUserStore.getState();
   const { entriesByDate, drinkEntriesByDate } = useDiaryStore.getState();
-  const { selectedPlanId, session } = useFastingStore.getState();
 
   return {
     user,
     weightHistory,
     entriesByDate,
     drinkEntriesByDate,
-    selectedPlanId,
-    fastingSession: session,
   };
 }
 
@@ -37,10 +31,6 @@ export function applySnapshot(snapshot: CloudSnapshot): void {
   useDiaryStore.setState({
     entriesByDate: snapshot.entriesByDate ?? {},
     drinkEntriesByDate: snapshot.drinkEntriesByDate ?? {},
-  });
-  useFastingStore.setState({
-    selectedPlanId: snapshot.selectedPlanId ?? '16:8',
-    session: snapshot.fastingSession ?? null,
   });
 }
 

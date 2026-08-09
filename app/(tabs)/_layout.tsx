@@ -1,4 +1,4 @@
-import { BookOpen, ChartColumn, Timer, User } from 'lucide-react-native';
+import { BookOpen, ChartColumn, User } from 'lucide-react-native';
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
 
@@ -45,13 +45,6 @@ export default function TabsLayout() {
         options={{
           title: 'Tagebuch',
           tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
-        }}
-      />
-      <Tabs.Screen
-        name="fasten"
-        options={{
-          title: 'Fasten',
-          tabBarIcon: ({ color, size }) => <Timer color={color} size={size} />,
         }}
       />
       <Tabs.Screen

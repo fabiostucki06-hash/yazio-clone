@@ -12,6 +12,8 @@ function makeId(): string {
   return `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
 }
 
+const EMPTY_ENTRIES: MealEntry[] = [];
+
 interface DiaryState {
   entriesByDate: Record<string, MealEntry[]>;
   waterMlByDate: Record<string, number>;
@@ -62,7 +64,7 @@ export const useDiaryStore = create<DiaryState>()(
         }));
       },
 
-      getEntriesForDate: (date) => get().entriesByDate[date] ?? [],
+      getEntriesForDate: (date) => get().entriesByDate[date] ?? EMPTY_ENTRIES,
       getWaterForDate: (date) => get().waterMlByDate[date] ?? 0,
     }),
     {

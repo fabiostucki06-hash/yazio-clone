@@ -27,6 +27,7 @@ const ACCENT = '#10b981';
 const RING_SIZE = 176;
 const RING_STROKE = 16;
 const WATER_QUICK_ADD_ML = 250;
+const EMPTY_ENTRIES: MealEntry[] = [];
 
 function getLastUpdatedLabel(): string {
   if (process.env.EXPO_PUBLIC_BUILD_TIME) {
@@ -157,7 +158,7 @@ function WaterTracker() {
 
 export default function DiaryScreen() {
   const date = todayKey();
-  const entries = useDiaryStore((state) => state.entriesByDate[date] ?? []);
+  const entries = useDiaryStore((state) => state.entriesByDate[date] ?? EMPTY_ENTRIES);
   const user = useUserStore((state) => state.user);
 
   const today = new Date().toLocaleDateString('de-DE', {

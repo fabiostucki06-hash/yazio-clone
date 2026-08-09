@@ -1,5 +1,5 @@
 import { Droplet, Egg, Plus, Scale, Target, Wheat } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -32,6 +32,7 @@ export default function ProfilScreen() {
   const weightHistory = useUserStore((state) => state.weightHistory);
   const updateAccount = useUserStore((state) => state.updateAccount);
   const updateProfile = useUserStore((state) => state.updateProfile);
+  const updateMacroGoal = useUserStore((state) => state.updateMacroGoal);
   const addWeightEntry = useUserStore((state) => state.addWeightEntry);
   const toggleNutrientVisibility = useUserStore((state) => state.toggleNutrientVisibility);
 
@@ -44,6 +45,15 @@ export default function ProfilScreen() {
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(user.activityLevel ?? 'moderate');
   const [goal, setGoal] = useState<Goal>(user.goal ?? 'maintain');
   const [newWeight, setNewWeight] = useState('');
+  const [carbsGoal, setCarbsGoal] = useState(String(user.dailyMacroGoal.carbs));
+  const [proteinGoal, setProteinGoal] = useState(String(user.dailyMacroGoal.protein));
+  const [fatGoal, setFatGoal] = useState(String(user.dailyMacroGoal.fat));
+
+  useEffect(() => {
+    setCarbsGoal(String(user.dailyMacroGoal.carbs));
+    setProteinGoal(String(user.dailyMacroGoal.protein));
+    setFatGoal(String(user.dailyMacroGoal.fat));
+  }, [user.dailyMacroGoal.carbs, user.dailyMacroGoal.protein, user.dailyMacroGoal.fat]);
 
   const initial = user.name.charAt(0).toUpperCase();
 
@@ -58,9 +68,26 @@ export default function ProfilScreen() {
   const isAccountValid = trimmedName.length > 0 && EMAIL_PATTERN.test(trimmedEmail);
   const isAccountDirty = trimmedName !== user.name || trimmedEmail !== user.email;
 
+  const parsedCarbsGoal = Number.parseFloat(carbsGoal.replace(',', '.'));
+  const parsedProteinGoal = Number.parseFloat(proteinGoal.replace(',', '.'));
+  const parsedFatGoal = Number.parseFloat(fatGoal.replace(',', '.'));
+  const isMacroFormValid =
+    Number.isFinite(parsedCarbsGoal) &&
+    parsedCarbsGoal > 0 &&
+    Number.isFinite(parsedProteinGoal) &&
+    parsedProteinGoal > 0 &&
+    Number.isFinite(parsedFatGoal) &&
+    parsedFatGoal > 0;
+  const macroCalorieTotal = Math.round(parsedCarbsGoal * 4 + parsedProteinGoal * 4 + parsedFatGoal * 9);
+
   function handleSaveProfile() {
     if (!isFormValid) return;
     updateProfile({ age: parsedAge, gender, heightCm: parsedHeight, weightKg: parsedWeight, activityLevel, goal });
+  }
+
+  function handleSaveMacros() {
+    if (!isMacroFormValid) return;
+    updateMacroGoal({ carbs: parsedCarbsGoal, protein: parsedProteinGoal, fat: parsedFatGoal });
   }
 
   function handleSaveAccount() {
@@ -124,6 +151,25 @@ export default function ProfilScreen() {
           <InfoRow icon={<Egg color="#ef4444" size={18} />} label="Protein" value={`${user.dailyMacroGoal.protein} g`} />
           <InfoRow icon={<Droplet color="#f59e0b" size={18} />} label="Fett" value={`${user.dailyMacroGoal.fat} g`} />
         </View>
+
+        <Card className="gap-4">
+          <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Makronährstoffe anpassen</Text>
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <TextField label="Carbs" keyboardType="decimal-pad" value={carbsGoal} onChangeText={setCarbsGoal} suffix="g" />
+            </View>
+            <View className="flex-1">
+              <TextField label="Protein" keyboardType="decimal-pad" value={proteinGoal} onChangeText={setProteinGoal} suffix="g" />
+            </View>
+            <View className="flex-1">
+              <TextField label="Fett" keyboardType="decimal-pad" value={fatGoal} onChangeText={setFatGoal} suffix="g" />
+            </View>
+          </View>
+          {isMacroFormValid ? (
+            <Text className="text-xs text-slate-500 dark:text-slate-400">Entspricht {macroCalorieTotal} kcal Tagesziel</Text>
+          ) : null}
+          <Button label="Makros speichern" variant="secondary" onPress={handleSaveMacros} disabled={!isMacroFormValid} />
+        </Card>
 
         <Card className="gap-4">
           <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Ziel wählen</Text>

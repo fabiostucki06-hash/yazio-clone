@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import type { NutrientKey, User, WeightEntry } from '@/types';
+import type { Macros, NutrientKey, User, WeightEntry } from '@/types';
 import {
   calculateBMR,
   calculateDailyTargets,
@@ -49,6 +49,7 @@ interface UserState {
   completeOnboarding: (name: string, email: string) => void;
   updateAccount: (input: { name: string; email: string }) => void;
   updateProfile: (input: ProfileInput) => void;
+  updateMacroGoal: (input: Macros) => void;
   addWeightEntry: (weightKg: number, date?: string) => void;
   toggleNutrientVisibility: (key: NutrientKey) => void;
 }
@@ -104,6 +105,17 @@ export const useUserStore = create<UserState>()(
         if (!hasToday) {
           get().addWeightEntry(input.weightKg, today);
         }
+      },
+
+      updateMacroGoal: (input) => {
+        const dailyCalorieGoal = Math.round(input.carbs * 4 + input.protein * 4 + input.fat * 9);
+        set((state) => ({
+          user: {
+            ...state.user,
+            dailyMacroGoal: { ...input },
+            dailyCalorieGoal,
+          },
+        }));
       },
 
       toggleNutrientVisibility: (key) => {

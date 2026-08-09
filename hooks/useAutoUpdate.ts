@@ -27,7 +27,11 @@ async function clearCachesAndReload() {
  * new Vercel deployment without manually hard-refreshing.
  */
 export function useAutoUpdate() {
-  const knownVersionRef = useRef<string | null>(null);
+  // The version this bundle was actually built with, baked in at build time.
+  // Used as the ground-truth baseline instead of trusting whatever the first
+  // poll happens to return, which could already reflect a newer deploy if a
+  // release lands between page load and that first check.
+  const knownVersionRef = useRef<string | null>(process.env.EXPO_PUBLIC_BUILD_VERSION ?? null);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;

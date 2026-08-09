@@ -1,5 +1,5 @@
 {
-  "buildCommand": "EXPO_PUBLIC_BUILD_TIME=\"$(TZ=Europe/Berlin date +'%d.%m.%Y, %H:%M')\" npx expo export --platform web && node scripts/generate-build-version.js",
+  "buildCommand": "EXPO_PUBLIC_BUILD_TIME=\"$(TZ=Europe/Berlin date +'%d.%m.%Y, %H:%M')\" EXPO_PUBLIC_BUILD_VERSION=\"$VERCEL_GIT_COMMIT_SHA\" npx expo export --platform web && node scripts/generate-build-version.js",
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }

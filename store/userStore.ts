@@ -42,6 +42,11 @@ export interface ProfileInput {
   goal: Goal;
 }
 
+export interface GoalsInput {
+  dailyCalorieGoal: number;
+  dailyMacroGoal: Macros;
+}
+
 interface UserState {
   user: User;
   weightHistory: WeightEntry[];
@@ -49,7 +54,7 @@ interface UserState {
   completeOnboarding: (name: string, email: string) => void;
   updateAccount: (input: { name: string; email: string }) => void;
   updateProfile: (input: ProfileInput) => void;
-  updateMacroGoal: (input: Macros) => void;
+  updateGoals: (input: GoalsInput) => void;
   addWeightEntry: (weightKg: number, date?: string) => void;
   toggleNutrientVisibility: (key: NutrientKey) => void;
 }
@@ -107,13 +112,12 @@ export const useUserStore = create<UserState>()(
         }
       },
 
-      updateMacroGoal: (input) => {
-        const dailyCalorieGoal = Math.round(input.carbs * 4 + input.protein * 4 + input.fat * 9);
+      updateGoals: (input) => {
         set((state) => ({
           user: {
             ...state.user,
-            dailyMacroGoal: { ...input },
-            dailyCalorieGoal,
+            dailyCalorieGoal: input.dailyCalorieGoal,
+            dailyMacroGoal: { ...input.dailyMacroGoal },
           },
         }));
       },

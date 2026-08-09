@@ -1,6 +1,6 @@
 import { Droplet, Egg, Plus, Scale, Target, Wheat } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CloudSyncCard } from '@/components/features/CloudSyncCard';
@@ -13,14 +13,34 @@ import { TextField } from '@/components/ui/TextField';
 import { useUserStore } from '@/store/userStore';
 import type { ActivityLevel, Gender, Goal } from '@/utils/nutritionCalculator';
 
-function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function GoalInputRow({
+  icon,
+  label,
+  value,
+  onChangeText,
+  suffix,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  suffix: string;
+}) {
   return (
     <View className="flex-row items-center justify-between rounded-2xl border border-white/60 bg-white/70 px-4 py-3 backdrop-blur-md dark:border-white/10 dark:bg-white/5">
       <View className="flex-row items-center gap-3">
         {icon}
         <Text className="text-sm text-slate-500 dark:text-slate-400">{label}</Text>
       </View>
-      <Text className="text-sm font-semibold text-slate-900 dark:text-white">{value}</Text>
+      <View className="flex-row items-center gap-1.5">
+        <TextInput
+          className="w-16 text-right text-sm font-semibold text-slate-900 dark:text-white"
+          keyboardType="decimal-pad"
+          value={value}
+          onChangeText={onChangeText}
+        />
+        <Text className="text-sm text-slate-400">{suffix}</Text>
+      </View>
     </View>
   );
 }
@@ -32,7 +52,7 @@ export default function ProfilScreen() {
   const weightHistory = useUserStore((state) => state.weightHistory);
   const updateAccount = useUserStore((state) => state.updateAccount);
   const updateProfile = useUserStore((state) => state.updateProfile);
-  const updateMacroGoal = useUserStore((state) => state.updateMacroGoal);
+  const updateGoals = useUserStore((state) => state.updateGoals);
   const addWeightEntry = useUserStore((state) => state.addWeightEntry);
   const toggleNutrientVisibility = useUserStore((state) => state.toggleNutrientVisibility);
 
@@ -45,15 +65,44 @@ export default function ProfilScreen() {
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(user.activityLevel ?? 'moderate');
   const [goal, setGoal] = useState<Goal>(user.goal ?? 'maintain');
   const [newWeight, setNewWeight] = useState('');
+  const [calorieGoal, setCalorieGoal] = useState(String(user.dailyCalorieGoal));
   const [carbsGoal, setCarbsGoal] = useState(String(user.dailyMacroGoal.carbs));
   const [proteinGoal, setProteinGoal] = useState(String(user.dailyMacroGoal.protein));
   const [fatGoal, setFatGoal] = useState(String(user.dailyMacroGoal.fat));
 
   useEffect(() => {
+    setCalorieGoal(String(user.dailyCalorieGoal));
     setCarbsGoal(String(user.dailyMacroGoal.carbs));
     setProteinGoal(String(user.dailyMacroGoal.protein));
     setFatGoal(String(user.dailyMacroGoal.fat));
-  }, [user.dailyMacroGoal.carbs, user.dailyMacroGoal.protein, user.dailyMacroGoal.fat]);
+  }, [user.dailyCalorieGoal, user.dailyMacroGoal.carbs, user.dailyMacroGoal.protein, user.dailyMacroGoal.fat]);
+
+  // Recompute the calorie total only in response to an actual macro edit, not on
+  // mount/external sync, since the stored macros don't perfectly round-trip to the
+  // stored calorie goal (each macro is rounded independently).
+  function recalcCalorieGoal(nextCarbs: string, nextProtein: string, nextFat: string) {
+    const c = Number.parseFloat(nextCarbs.replace(',', '.'));
+    const p = Number.parseFloat(nextProtein.replace(',', '.'));
+    const f = Number.parseFloat(nextFat.replace(',', '.'));
+    if (Number.isFinite(c) && Number.isFinite(p) && Number.isFinite(f)) {
+      setCalorieGoal(String(Math.round(c * 4 + p * 4 + f * 9)));
+    }
+  }
+
+  function handleCarbsChange(text: string) {
+    setCarbsGoal(text);
+    recalcCalorieGoal(text, proteinGoal, fatGoal);
+  }
+
+  function handleProteinChange(text: string) {
+    setProteinGoal(text);
+    recalcCalorieGoal(carbsGoal, text, fatGoal);
+  }
+
+  function handleFatChange(text: string) {
+    setFatGoal(text);
+    recalcCalorieGoal(carbsGoal, proteinGoal, text);
+  }
 
   const initial = user.name.charAt(0).toUpperCase();
 
@@ -68,26 +117,31 @@ export default function ProfilScreen() {
   const isAccountValid = trimmedName.length > 0 && EMAIL_PATTERN.test(trimmedEmail);
   const isAccountDirty = trimmedName !== user.name || trimmedEmail !== user.email;
 
+  const parsedCalorieGoal = Number.parseFloat(calorieGoal.replace(',', '.'));
   const parsedCarbsGoal = Number.parseFloat(carbsGoal.replace(',', '.'));
   const parsedProteinGoal = Number.parseFloat(proteinGoal.replace(',', '.'));
   const parsedFatGoal = Number.parseFloat(fatGoal.replace(',', '.'));
-  const isMacroFormValid =
+  const isGoalsFormValid =
+    Number.isFinite(parsedCalorieGoal) &&
+    parsedCalorieGoal > 0 &&
     Number.isFinite(parsedCarbsGoal) &&
     parsedCarbsGoal > 0 &&
     Number.isFinite(parsedProteinGoal) &&
     parsedProteinGoal > 0 &&
     Number.isFinite(parsedFatGoal) &&
     parsedFatGoal > 0;
-  const macroCalorieTotal = Math.round(parsedCarbsGoal * 4 + parsedProteinGoal * 4 + parsedFatGoal * 9);
 
   function handleSaveProfile() {
     if (!isFormValid) return;
     updateProfile({ age: parsedAge, gender, heightCm: parsedHeight, weightKg: parsedWeight, activityLevel, goal });
   }
 
-  function handleSaveMacros() {
-    if (!isMacroFormValid) return;
-    updateMacroGoal({ carbs: parsedCarbsGoal, protein: parsedProteinGoal, fat: parsedFatGoal });
+  function handleSaveGoals() {
+    if (!isGoalsFormValid) return;
+    updateGoals({
+      dailyCalorieGoal: Math.round(parsedCalorieGoal),
+      dailyMacroGoal: { carbs: parsedCarbsGoal, protein: parsedProteinGoal, fat: parsedFatGoal },
+    });
   }
 
   function handleSaveAccount() {
@@ -146,30 +200,12 @@ export default function ProfilScreen() {
 
         <View className="gap-2">
           <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Ziele</Text>
-          <InfoRow icon={<Target color="#10b981" size={18} />} label="Tagesziel Kalorien" value={`${user.dailyCalorieGoal} kcal`} />
-          <InfoRow icon={<Wheat color="#3b82f6" size={18} />} label="Carbs" value={`${user.dailyMacroGoal.carbs} g`} />
-          <InfoRow icon={<Egg color="#ef4444" size={18} />} label="Protein" value={`${user.dailyMacroGoal.protein} g`} />
-          <InfoRow icon={<Droplet color="#f59e0b" size={18} />} label="Fett" value={`${user.dailyMacroGoal.fat} g`} />
+          <GoalInputRow icon={<Target color="#10b981" size={18} />} label="Tagesziel Kalorien" value={calorieGoal} onChangeText={setCalorieGoal} suffix="kcal" />
+          <GoalInputRow icon={<Wheat color="#3b82f6" size={18} />} label="Carbs" value={carbsGoal} onChangeText={handleCarbsChange} suffix="g" />
+          <GoalInputRow icon={<Egg color="#ef4444" size={18} />} label="Protein" value={proteinGoal} onChangeText={handleProteinChange} suffix="g" />
+          <GoalInputRow icon={<Droplet color="#f59e0b" size={18} />} label="Fett" value={fatGoal} onChangeText={handleFatChange} suffix="g" />
+          <Button label="Ziele speichern" onPress={handleSaveGoals} disabled={!isGoalsFormValid} className="mt-1" />
         </View>
-
-        <Card className="gap-4">
-          <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Makronährstoffe anpassen</Text>
-          <View className="flex-row gap-3">
-            <View className="flex-1">
-              <TextField label="Carbs" keyboardType="decimal-pad" value={carbsGoal} onChangeText={setCarbsGoal} suffix="g" />
-            </View>
-            <View className="flex-1">
-              <TextField label="Protein" keyboardType="decimal-pad" value={proteinGoal} onChangeText={setProteinGoal} suffix="g" />
-            </View>
-            <View className="flex-1">
-              <TextField label="Fett" keyboardType="decimal-pad" value={fatGoal} onChangeText={setFatGoal} suffix="g" />
-            </View>
-          </View>
-          {isMacroFormValid ? (
-            <Text className="text-xs text-slate-500 dark:text-slate-400">Entspricht {macroCalorieTotal} kcal Tagesziel</Text>
-          ) : null}
-          <Button label="Makros speichern" variant="secondary" onPress={handleSaveMacros} disabled={!isMacroFormValid} />
-        </Card>
 
         <Card className="gap-4">
           <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Ziel wählen</Text>

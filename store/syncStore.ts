@@ -36,6 +36,23 @@ function describeSyncError(err: unknown): string {
   return 'Sync fehlgeschlagen';
 }
 
+function isNetworkError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /failed to fetch|network request failed|load failed/i.test(message);
+}
+
+async function withFriendlyAuthErrors<T>(action: () => Promise<T>): Promise<T> {
+  try {
+    return await action();
+  } catch (err) {
+    console.error('[auth]', err);
+    if (isNetworkError(err)) {
+      throw new Error('Verbindung zum Server fehlgeschlagen. Bitte API-Konfiguration überprüfen.');
+    }
+    throw err;
+  }
+}
+
 function scheduleAutoSync() {
   if (applyingRemote) return;
   if (autoSyncTimer) clearTimeout(autoSyncTimer);
@@ -111,20 +128,22 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     });
   },
 
-  signUp: async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
-    return { needsEmailConfirmation: !data.session };
-  },
+  signUp: async (email, password) =>
+    withFriendlyAuthErrors(async () => {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      return { needsEmailConfirmation: !data.session };
+    }),
 
-  signIn: async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    if (data.session) {
-      set({ session: data.session, sessionChecked: true, status: 'syncing', error: null });
-      await afterSessionEstablished(data.session);
-    }
-  },
+  signIn: async (email, password) =>
+    withFriendlyAuthErrors(async () => {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (data.session) {
+        set({ session: data.session, sessionChecked: true, status: 'syncing', error: null });
+        await afterSessionEstablished(data.session);
+      }
+    }),
 
   signOut: async () => {
     stopAutoSyncWatchers();

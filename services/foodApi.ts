@@ -2,6 +2,7 @@ import type { FoodItem } from '@/types';
 
 const SEARCH_URL = 'https://world.openfoodfacts.org/cgi/search.pl';
 const PRODUCT_URL = 'https://world.openfoodfacts.org/api/v2/product';
+const REQUEST_TIMEOUT_MS = 8000;
 
 export class FoodApiError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
@@ -14,6 +15,14 @@ export class ProductNotFoundError extends FoodApiError {
   constructor(identifier: string) {
     super(`Produkt nicht gefunden: ${identifier}`);
     this.name = 'ProductNotFoundError';
+  }
+}
+
+/** The online search timed out or the device is offline - callers should fall back to local results. */
+export class FoodApiUnavailableError extends FoodApiError {
+  constructor(cause?: unknown) {
+    super('Online-Suche nicht erreichbar. Zeige lokale Treffer.', cause);
+    this.name = 'FoodApiUnavailableError';
   }
 }
 
@@ -72,12 +81,21 @@ function normalizeFoodItem(product: OffProduct, fallbackId: string): FoodItem {
   };
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
+async function fetchJson<T>(url: string, externalSignal?: AbortSignal): Promise<T> {
+  const timeoutController = new AbortController();
+  const timeout = setTimeout(() => timeoutController.abort(), REQUEST_TIMEOUT_MS);
+  externalSignal?.addEventListener('abort', () => timeoutController.abort());
+
   let response: Response;
   try {
-    response = await fetch(url);
+    response = await fetch(url, { signal: timeoutController.signal });
   } catch (error) {
+    if (timeoutController.signal.aborted && !externalSignal?.aborted) {
+      throw new FoodApiUnavailableError(error);
+    }
     throw new FoodApiError('Netzwerkfehler: Open Food Facts konnte nicht erreicht werden.', error);
+  } finally {
+    clearTimeout(timeout);
   }
 
   if (!response.ok) {
@@ -91,14 +109,14 @@ async function fetchJson<T>(url: string): Promise<T> {
   }
 }
 
-export async function searchFood(query: string): Promise<FoodItem[]> {
+export async function searchFood(query: string, signal?: AbortSignal): Promise<FoodItem[]> {
   const trimmedQuery = query.trim();
   if (!trimmedQuery) {
     return [];
   }
 
   const url = `${SEARCH_URL}?search_terms=${encodeURIComponent(trimmedQuery)}&search_simple=1&action=process&json=1&page_size=25`;
-  const data = await fetchJson<OffSearchResponse>(url);
+  const data = await fetchJson<OffSearchResponse>(url, signal);
   const products = data.products ?? [];
 
   return products

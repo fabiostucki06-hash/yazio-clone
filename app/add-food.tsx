@@ -1,10 +1,14 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Barcode, Check, Search, X } from 'lucide-react-native';
+import { Barcode, Check, Plus, Search, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { FoodApiError, searchFood } from '@/services/foodApi';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { TextField } from '@/components/ui/TextField';
+import { normalizeSearchText, searchLocalFoods } from '@/data/foodDatabase';
+import { FoodApiError, FoodApiUnavailableError, searchFood } from '@/services/foodApi';
 import { useDiaryStore, todayKey } from '@/store/diaryStore';
 import { useUiStore } from '@/store/uiStore';
 import type { FoodItem, MealType } from '@/types';
@@ -17,7 +21,17 @@ const MEAL_LABELS: Record<MealType, string> = {
   drinks: 'Getränke',
 };
 
-const DEBOUNCE_MS = 400;
+const DEBOUNCE_MS = 350;
+
+interface Notice {
+  message: string;
+  severity: 'warning' | 'error';
+}
+
+function parseNumber(value: string, fallback: number): number {
+  const parsed = Number.parseFloat(value.replace(',', '.'));
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
 
 export default function AddFoodScreen() {
   const params = useLocalSearchParams<{ mealType: MealType }>();
@@ -31,31 +45,67 @@ export default function AddFoodScreen() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customKcal, setCustomKcal] = useState('');
+  const [customCarbs, setCustomCarbs] = useState('');
+  const [customProtein, setCustomProtein] = useState('');
+  const [customFat, setCustomFat] = useState('');
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    abortRef.current?.abort();
 
     const trimmed = query.trim();
     if (!trimmed) {
+      requestIdRef.current += 1;
       setResults([]);
-      setError(null);
+      setNotice(null);
       setLoading(false);
       return;
     }
 
+    const localMatches = searchLocalFoods(trimmed);
+    setResults(localMatches);
+    setNotice(null);
     setLoading(true);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const requestId = ++requestIdRef.current;
+
     debounceRef.current = setTimeout(async () => {
       try {
-        const items = await searchFood(trimmed);
-        setResults(items);
-        setError(null);
+        const remoteItems = await searchFood(trimmed, controller.signal);
+        if (requestIdRef.current !== requestId) return;
+
+        const seenNames = new Set(localMatches.map((item) => normalizeSearchText(item.name)));
+        const merged = [...localMatches];
+        for (const item of remoteItems) {
+          const key = normalizeSearchText(item.name);
+          if (seenNames.has(key)) continue;
+          seenNames.add(key);
+          merged.push(item);
+        }
+        setResults(merged);
+        setNotice(null);
       } catch (err) {
-        setError(err instanceof FoodApiError ? err.message : 'Unbekannter Fehler bei der Suche.');
-        setResults([]);
+        if (requestIdRef.current !== requestId) return;
+        if (err instanceof FoodApiUnavailableError) {
+          setNotice({ message: err.message, severity: 'warning' });
+        } else {
+          setNotice({
+            message: err instanceof FoodApiError ? err.message : 'Unbekannter Fehler bei der Suche.',
+            severity: 'error',
+          });
+        }
       } finally {
-        setLoading(false);
+        if (requestIdRef.current === requestId) setLoading(false);
       }
     }, DEBOUNCE_MS);
 
@@ -63,6 +113,8 @@ export default function AddFoodScreen() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [query]);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   function handleSelect(item: FoodItem) {
     setPendingSelection(item, mealType);
@@ -82,7 +134,39 @@ export default function AddFoodScreen() {
     router.back();
   }
 
+  function handleOpenCustomForm() {
+    setCustomName(query.trim());
+    setCustomKcal('');
+    setCustomCarbs('');
+    setCustomProtein('');
+    setCustomFat('');
+    setShowCustomForm(true);
+  }
+
+  function handleCustomFoodContinue() {
+    const trimmedName = customName.trim();
+    if (!trimmedName) return;
+
+    const foodItem: FoodItem = {
+      id: `custom-${Date.now()}`,
+      name: trimmedName,
+      caloriesPerServing: parseNumber(customKcal, 0),
+      macrosPerServing: {
+        carbs: parseNumber(customCarbs, 0),
+        protein: parseNumber(customProtein, 0),
+        fat: parseNumber(customFat, 0),
+      },
+      micronutrientsPerServing: { fiber: 0, sugar: 0, sodium: 0, vitaminC: 0 },
+      servingSize: 100,
+      servingUnit: 'g',
+    };
+
+    setShowCustomForm(false);
+    handleSelect(foodItem);
+  }
+
   const cartTotalKcal = cart.reduce((sum, item) => sum + item.foodItem.caloriesPerServing * item.servings, 0);
+  const showEmptyState = !loading && query.trim().length > 0 && results.length === 0;
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-background-dark">
@@ -138,7 +222,10 @@ export default function AddFoodScreen() {
             placeholder="Lebensmittel suchen..."
             placeholderTextColor="#94a3b8"
             value={query}
-            onChangeText={setQuery}
+            onChangeText={(text) => {
+              setQuery(text);
+              setShowCustomForm(false);
+            }}
             autoFocus
             returnKeyType="search"
           />
@@ -154,8 +241,10 @@ export default function AddFoodScreen() {
         </Pressable>
       </View>
 
-      {error && (
-        <Text className="px-6 pt-4 text-sm text-red-500">{error}</Text>
+      {notice && (
+        <Text className={`px-6 pt-4 text-sm ${notice.severity === 'error' ? 'text-red-500' : 'text-amber-600 dark:text-amber-400'}`}>
+          {notice.message}
+        </Text>
       )}
 
       <FlatList
@@ -165,8 +254,44 @@ export default function AddFoodScreen() {
         contentContainerClassName={cart.length > 0 ? 'gap-2 pb-28' : 'gap-2 pb-12'}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
-          !loading && query.trim().length > 0 && !error ? (
-            <Text className="pt-8 text-center text-sm text-slate-400">Keine Ergebnisse gefunden.</Text>
+          showEmptyState ? (
+            <View className="items-center gap-4 pt-8">
+              <Text className="text-center text-sm text-slate-400">Keine Lebensmittel gefunden</Text>
+              {!showCustomForm && (
+                <Pressable
+                  className="flex-row items-center gap-2 rounded-full border border-emerald-500/60 bg-emerald-500/10 px-4 py-2 active:opacity-80"
+                  onPress={handleOpenCustomForm}
+                >
+                  <Plus color="#10b981" size={16} />
+                  <Text className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                    Eigenes Lebensmittel hinzufügen
+                  </Text>
+                </Pressable>
+              )}
+              {showCustomForm && (
+                <Card className="w-full gap-4">
+                  <TextField label="Name" value={customName} onChangeText={setCustomName} placeholder="z. B. Omas Kuchen" autoFocus />
+                  <Text className="text-xs font-medium text-slate-500 dark:text-slate-400">Nährwerte pro 100g</Text>
+                  <View className="flex-row gap-3">
+                    <View className="flex-1">
+                      <TextField label="Kcal" keyboardType="decimal-pad" value={customKcal} onChangeText={setCustomKcal} />
+                    </View>
+                    <View className="flex-1">
+                      <TextField label="Carbs" keyboardType="decimal-pad" value={customCarbs} onChangeText={setCustomCarbs} suffix="g" />
+                    </View>
+                  </View>
+                  <View className="flex-row gap-3">
+                    <View className="flex-1">
+                      <TextField label="Protein" keyboardType="decimal-pad" value={customProtein} onChangeText={setCustomProtein} suffix="g" />
+                    </View>
+                    <View className="flex-1">
+                      <TextField label="Fett" keyboardType="decimal-pad" value={customFat} onChangeText={setCustomFat} suffix="g" />
+                    </View>
+                  </View>
+                  <Button label="Weiter" onPress={handleCustomFoodContinue} disabled={!customName.trim()} />
+                </Card>
+              )}
+            </View>
           ) : null
         }
         renderItem={({ item }) => (

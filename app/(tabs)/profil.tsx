@@ -5,11 +5,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CloudSyncCard } from '@/components/features/CloudSyncCard';
 import { NUTRIENT_META, NUTRIENT_ORDER } from '@/components/features/nutrientMeta';
-import { ACTIVITY_OPTIONS, ChipGroup, GENDER_OPTIONS, GOAL_OPTIONS } from '@/components/features/ProfileOptions';
+import { ACTIVITY_OPTIONS, ChipGroup, GENDER_OPTIONS, GOAL_OPTIONS, THEME_OPTIONS } from '@/components/features/ProfileOptions';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { LineChart } from '@/components/ui/LineChart';
 import { TextField } from '@/components/ui/TextField';
+import { useThemeStore } from '@/store/themeStore';
 import { useUserStore } from '@/store/userStore';
 import type { ActivityLevel, Gender, Goal } from '@/utils/nutritionCalculator';
 
@@ -69,6 +70,8 @@ export default function ProfilScreen() {
   const updateGoals = useUserStore((state) => state.updateGoals);
   const addWeightEntry = useUserStore((state) => state.addWeightEntry);
   const toggleNutrientVisibility = useUserStore((state) => state.toggleNutrientVisibility);
+  const themePreference = useThemeStore((state) => state.themePreference);
+  const setThemePreference = useThemeStore((state) => state.setThemePreference);
 
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
@@ -208,6 +211,11 @@ export default function ProfilScreen() {
             onPress={handleSaveAccount}
             disabled={!isAccountValid || !isAccountDirty}
           />
+        </Card>
+
+        <Card className="gap-3">
+          <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Darstellung</Text>
+          <ChipGroup options={THEME_OPTIONS} selected={themePreference} onSelect={setThemePreference} />
         </Card>
 
         <CloudSyncCard />

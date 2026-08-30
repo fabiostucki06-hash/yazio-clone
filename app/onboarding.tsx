@@ -8,6 +8,7 @@ import { ACTIVITY_OPTIONS, ChipGroup, GENDER_OPTIONS, GOAL_OPTIONS } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/TextField';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { pushSnapshot } from '@/services/cloudSync';
 import { useSyncStore } from '@/store/syncStore';
 import { useUserStore } from '@/store/userStore';
@@ -131,6 +132,9 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
+      <View className="flex-row justify-end px-6 pt-4">
+        <ThemeToggle />
+      </View>
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerClassName="flex-grow justify-center gap-8 px-6 py-8" keyboardShouldPersistTaps="handled">
           <View className="items-center gap-4">

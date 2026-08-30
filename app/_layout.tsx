@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 
 import { useAutoUpdate } from '@/hooks/useAutoUpdate';
+import { useThemeSync } from '@/hooks/useThemeSync';
 import { useSyncStore } from '@/store/syncStore';
 
 export default function RootLayout() {
@@ -14,6 +15,7 @@ export default function RootLayout() {
   }, [init]);
 
   useAutoUpdate();
+  useThemeSync();
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

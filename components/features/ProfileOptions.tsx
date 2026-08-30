@@ -20,6 +20,12 @@ export const ACTIVITY_OPTIONS: { id: ActivityLevel; label: string }[] = [
   { id: 'active', label: 'Sehr aktiv' },
 ];
 
+export const THEME_OPTIONS: { id: 'light' | 'dark' | 'system'; label: string }[] = [
+  { id: 'light', label: 'Hell' },
+  { id: 'dark', label: 'Dunkel' },
+  { id: 'system', label: 'System' },
+];
+
 export function ChipGroup<T extends string>({
   options,
   selected,

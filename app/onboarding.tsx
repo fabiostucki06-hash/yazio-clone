@@ -170,8 +170,8 @@ export default function OnboardingScreen() {
               <View className="flex-row gap-2">
                 <Pressable
                   onPress={() => selectMode('signUp')}
-                  className={`flex-1 items-center rounded-full border px-4 py-2 ${
-                    mode === 'signUp' ? 'border-emerald-500/60 bg-emerald-500/10' : 'border-white/60 bg-white/70 dark:border-white/10 dark:bg-white/5'
+                  className={`flex-1 items-center rounded-full border px-4 py-2 transition-colors duration-150 ease-in-out active:opacity-80 ${
+                    mode === 'signUp' ? 'border-emerald-500/60 bg-emerald-500/10' : 'border-slate-200/60 bg-white/70 dark:border-slate-800/60 dark:bg-white/5'
                   }`}
                 >
                   <Text
@@ -182,8 +182,8 @@ export default function OnboardingScreen() {
                 </Pressable>
                 <Pressable
                   onPress={() => selectMode('login')}
-                  className={`flex-1 items-center rounded-full border px-4 py-2 ${
-                    mode === 'login' ? 'border-emerald-500/60 bg-emerald-500/10' : 'border-white/60 bg-white/70 dark:border-white/10 dark:bg-white/5'
+                  className={`flex-1 items-center rounded-full border px-4 py-2 transition-colors duration-150 ease-in-out active:opacity-80 ${
+                    mode === 'login' ? 'border-emerald-500/60 bg-emerald-500/10' : 'border-slate-200/60 bg-white/70 dark:border-slate-800/60 dark:bg-white/5'
                   }`}
                 >
                   <Text
@@ -274,7 +274,7 @@ export default function OnboardingScreen() {
             {stepIndex >= 2 && (
               <Pressable
                 onPress={handleBack}
-                className="h-[54px] w-[54px] items-center justify-center rounded-2xl border border-white/60 bg-white/70 backdrop-blur-md active:opacity-80 dark:border-white/10 dark:bg-white/5"
+                className="h-[54px] w-[54px] items-center justify-center rounded-2xl border border-slate-200/60 bg-white/70 backdrop-blur-md transition-all duration-150 ease-in-out active:scale-95 active:opacity-80 dark:border-slate-800/60 dark:bg-white/5"
               >
                 <ChevronLeft color="#64748b" size={20} />
               </Pressable>

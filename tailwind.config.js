@@ -9,10 +9,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#2ECC71',
+        primary: '#10b981',
         background: {
           light: '#F4F6F8',
-          dark: '#0f172a',
+          dark: '#020617',
         },
         macro: {
           carbs: '#3b82f6',

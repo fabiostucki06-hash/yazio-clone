@@ -42,7 +42,7 @@ export default function BarcodeScannerScreen() {
       <View className="flex-row items-center justify-between px-6 pt-4">
         <Text className="text-lg font-bold tracking-tight text-white">Barcode scannen</Text>
         <Pressable
-          className="h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 backdrop-blur-md active:opacity-80"
+          className="h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 backdrop-blur-md transition-all duration-150 ease-in-out active:scale-95 active:opacity-80"
           onPress={() => router.back()}
         >
           <X color="#ffffff" size={18} />

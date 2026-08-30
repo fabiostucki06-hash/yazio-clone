@@ -47,7 +47,7 @@ export default function MealDetailScreen() {
           </Text>
         </View>
         <Pressable
-          className="h-9 w-9 items-center justify-center rounded-full border border-slate-200/50 bg-slate-100/60 backdrop-blur-md active:opacity-80 dark:border-white/10 dark:bg-white/5"
+          className="h-9 w-9 items-center justify-center rounded-full border border-slate-200/50 bg-slate-100/60 backdrop-blur-md transition-all duration-150 ease-in-out active:scale-95 active:opacity-80 dark:border-slate-800/60 dark:bg-white/5"
           onPress={() => router.back()}
         >
           <X color="#64748b" size={18} />
@@ -63,7 +63,7 @@ export default function MealDetailScreen() {
           entries.map((entry) => (
             <View
               key={entry.id}
-              className="flex-row items-center justify-between rounded-2xl border border-white/60 bg-white/70 px-4 py-3 shadow-md shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60"
+              className="flex-row items-center justify-between rounded-2xl border border-slate-200/60 bg-white/70 px-4 py-3 shadow-md shadow-slate-900/5 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/60"
             >
               <View className="flex-1 pr-3">
                 <Text className="text-sm font-semibold text-slate-900 dark:text-white" numberOfLines={1}>
@@ -87,7 +87,7 @@ export default function MealDetailScreen() {
       <View className="gap-3 px-6 pb-8 pt-3">
         <View className="flex-row gap-3">
           <Pressable
-            className="h-12 w-12 items-center justify-center rounded-2xl border border-white/60 bg-white/70 shadow-md shadow-slate-900/5 backdrop-blur-xl active:opacity-80 dark:border-white/10 dark:bg-slate-900/60"
+            className="h-12 w-12 items-center justify-center rounded-2xl border border-slate-200/60 bg-white/70 shadow-md shadow-slate-900/5 backdrop-blur-xl active:opacity-80 dark:border-slate-800/60 dark:bg-slate-900/60"
             onPress={() => router.push({ pathname: '/analyze-food', params: { mealType } })}
           >
             <Camera color="#10b981" size={20} />

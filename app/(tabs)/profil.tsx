@@ -33,10 +33,10 @@ function GoalInputRow({
 
   return (
     <View
-      className={`flex-row items-center justify-between rounded-[20px] border bg-[#EDF2F7] px-5 py-3.5 dark:bg-white/5 ${
+      className={`flex-row items-center justify-between rounded-2xl border bg-[#EDF2F7] px-5 py-3.5 transition-shadow duration-200 ease-in-out dark:bg-white/5 ${
         isFocused
-          ? 'border-[#2ECC71] shadow-md shadow-emerald-500/15 dark:border-emerald-400/70'
-          : 'border-[#D1D5DB] shadow-none dark:border-white/10'
+          ? 'border-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.15)] dark:border-emerald-400/70'
+          : 'border-slate-200/70 shadow-none dark:border-slate-800/60'
       }`}
     >
       <View className="flex-row items-center gap-3">
@@ -183,7 +183,7 @@ export default function ProfilScreen() {
       <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 pt-4 pb-32">
         <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Profil</Text>
 
-        <View className="items-center gap-3 rounded-[28px] border border-slate-200/70 bg-white py-6 shadow-2xl shadow-slate-900/10 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
+        <View className="items-center gap-3 rounded-[28px] border border-slate-200/70 bg-white py-6 shadow-2xl shadow-slate-900/10 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/60">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30">
             <Text className="text-2xl font-bold text-white">{initial || '?'}</Text>
           </View>
@@ -262,7 +262,7 @@ export default function ProfilScreen() {
               <View
                 key={key}
                 className={`flex-row items-center justify-between py-3 ${
-                  index > 0 ? 'border-t border-slate-200/50 dark:border-white/10' : ''
+                  index > 0 ? 'border-t border-slate-200/50 dark:border-slate-800/60' : ''
                 }`}
               >
                 <View className="flex-row items-center gap-3">

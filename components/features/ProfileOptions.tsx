@@ -43,10 +43,10 @@ export function ChipGroup<T extends string>({
           <Pressable
             key={option.id}
             onPress={() => onSelect(option.id)}
-            className={`rounded-full border px-4 py-2 backdrop-blur-md active:opacity-80 ${
+            className={`rounded-full border px-4 py-2 backdrop-blur-md transition-colors duration-150 ease-in-out active:opacity-80 ${
               isSelected
                 ? 'border-emerald-500/60 bg-emerald-500/10'
-                : 'border-white/60 bg-white/70 dark:border-white/10 dark:bg-white/5'
+                : 'border-slate-200/60 bg-white/70 dark:border-slate-800/60 dark:bg-white/5'
             }`}
           >
             <Text

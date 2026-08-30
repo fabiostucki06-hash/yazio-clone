@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { SkeletonListRow } from '@/components/ui/Skeleton';
 import { TextField } from '@/components/ui/TextField';
 import { normalizeSearchText, searchLocalFoods } from '@/data/foodDatabase';
 import { FoodApiError, FoodApiUnavailableError, searchFood } from '@/services/foodApi';
@@ -167,6 +168,7 @@ export default function AddFoodScreen() {
 
   const cartTotalKcal = cart.reduce((sum, item) => sum + item.foodItem.caloriesPerServing * item.servings, 0);
   const showEmptyState = !loading && query.trim().length > 0 && results.length === 0;
+  const showSkeletons = loading && query.trim().length > 0 && results.length === 0;
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-background-dark">
@@ -176,7 +178,7 @@ export default function AddFoodScreen() {
           <Text className="text-xs text-slate-400">{MEAL_LABELS[mealType]}</Text>
         </View>
         <Pressable
-          className="h-9 w-9 items-center justify-center rounded-full border border-slate-200/50 bg-slate-100/60 backdrop-blur-md active:opacity-80 dark:border-white/10 dark:bg-white/5"
+          className="h-9 w-9 items-center justify-center rounded-full border border-slate-200/50 bg-slate-100/60 backdrop-blur-md transition-all duration-150 ease-in-out active:scale-95 active:opacity-80 dark:border-slate-800/60 dark:bg-white/5"
           onPress={handleClose}
         >
           <X color="#64748b" size={18} />
@@ -192,7 +194,7 @@ export default function AddFoodScreen() {
             {cart.map((item) => (
               <View
                 key={item.id}
-                className="flex-row items-center justify-between rounded-2xl border border-white/60 bg-white/70 px-4 py-2.5 shadow-md shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60"
+                className="flex-row items-center justify-between rounded-2xl border border-slate-200/60 bg-white/70 px-4 py-2.5 shadow-md shadow-slate-900/5 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/60"
               >
                 <View className="flex-1 pr-3">
                   <Text className="text-sm font-medium text-slate-900 dark:text-white" numberOfLines={1}>
@@ -215,7 +217,7 @@ export default function AddFoodScreen() {
       )}
 
       <View className="gap-3 px-6 pt-4">
-        <View className="flex-row items-center gap-2 rounded-2xl border border-white/60 bg-white/70 px-4 py-3 shadow-md shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
+        <View className="flex-row items-center gap-2 rounded-2xl border border-slate-200/60 bg-white/70 px-4 py-3 shadow-sm shadow-slate-900/5 backdrop-blur-xl transition-shadow duration-200 ease-in-out dark:border-slate-800/60 dark:bg-slate-900/60">
           <Search color="#94a3b8" size={18} />
           <TextInput
             className="flex-1 text-base text-slate-900 dark:text-white"
@@ -230,10 +232,23 @@ export default function AddFoodScreen() {
             returnKeyType="search"
           />
           {loading && <ActivityIndicator size="small" color="#10b981" />}
+          {!loading && query.length > 0 && (
+            <Pressable
+              className="h-6 w-6 items-center justify-center rounded-full bg-slate-100/80 transition-colors duration-150 ease-in-out active:opacity-70 dark:bg-white/10"
+              onPress={() => {
+                setQuery('');
+                setShowCustomForm(false);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Suche leeren"
+            >
+              <X color="#64748b" size={12} />
+            </Pressable>
+          )}
         </View>
 
         <Pressable
-          className="flex-row items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3.5 shadow-lg shadow-emerald-500/25 active:opacity-90 active:bg-emerald-600"
+          className="flex-row items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3.5 shadow-md shadow-emerald-500/20 transition-all duration-150 ease-in-out active:scale-[0.98] active:opacity-90 active:bg-emerald-600"
           onPress={() => router.push({ pathname: '/barcode-scanner', params: { mealType } })}
         >
           <Barcode color="#ffffff" size={18} />
@@ -254,7 +269,13 @@ export default function AddFoodScreen() {
         contentContainerClassName={cart.length > 0 ? 'gap-2 pb-28' : 'gap-2 pb-12'}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
-          showEmptyState ? (
+          showSkeletons ? (
+            <View className="gap-2">
+              <SkeletonListRow />
+              <SkeletonListRow />
+              <SkeletonListRow />
+            </View>
+          ) : showEmptyState ? (
             <View className="items-center gap-4 pt-8">
               <Text className="text-center text-sm text-slate-400">Keine Lebensmittel gefunden</Text>
               {!showCustomForm && (
@@ -296,7 +317,7 @@ export default function AddFoodScreen() {
         }
         renderItem={({ item }) => (
           <Pressable
-            className="flex-row items-center justify-between rounded-2xl border border-white/60 bg-white/70 px-4 py-3 shadow-md shadow-slate-900/5 backdrop-blur-xl active:opacity-80 dark:border-white/10 dark:bg-slate-900/60"
+            className="flex-row items-center justify-between rounded-2xl border border-slate-200/60 bg-white/70 px-4 py-3 shadow-sm shadow-slate-900/5 backdrop-blur-xl transition-all duration-150 ease-in-out active:scale-[0.98] active:opacity-80 dark:border-slate-800/60 dark:bg-slate-900/60"
             onPress={() => handleSelect(item)}
           >
             <View className="flex-1 pr-3">
@@ -317,7 +338,7 @@ export default function AddFoodScreen() {
       />
 
       {cart.length > 0 && (
-        <View className="absolute inset-x-0 bottom-0 border-t border-white/60 bg-white/80 px-6 pb-8 pt-3 shadow-2xl shadow-slate-900/10 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">
+        <View className="absolute inset-x-0 bottom-0 border-t border-slate-200/60 bg-white/80 px-6 pb-8 pt-3 shadow-2xl shadow-slate-900/10 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/80">
           <Pressable
             className="flex-row items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3.5 shadow-lg shadow-emerald-500/25 active:opacity-90 active:bg-emerald-600"
             onPress={handleFinish}

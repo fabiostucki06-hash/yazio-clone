@@ -62,7 +62,7 @@ function MealCard({ mealType, entries }: { mealType: MealType; entries: MealEntr
 
   return (
     <Pressable
-      className="gap-3 rounded-[28px] border border-white/60 bg-white/70 p-4 shadow-xl shadow-slate-900/5 backdrop-blur-xl active:opacity-90 dark:border-white/10 dark:bg-slate-900/60 dark:shadow-black/20"
+      className="gap-3 rounded-[28px] border border-slate-200/60 bg-white/70 p-4 shadow-xl shadow-slate-900/5 backdrop-blur-xl active:opacity-90 dark:border-slate-800/60 dark:bg-slate-900/60 dark:shadow-black/20"
       onPress={() => router.push({ pathname: '/meal-detail', params: { mealType } })}
     >
       <View className="flex-row items-center justify-between">
@@ -94,7 +94,7 @@ function MealCard({ mealType, entries }: { mealType: MealType; entries: MealEntr
       </View>
 
       {entries.length > 0 && (
-        <View className="gap-2 border-t border-slate-200/50 pt-3 dark:border-white/10">
+        <View className="gap-2 border-t border-slate-200/50 pt-3 dark:border-slate-800/60">
           {entries.map((entry) => (
             <View key={entry.id} className="flex-row items-center justify-between">
               <Text className="flex-1 text-sm text-slate-600 dark:text-slate-300" numberOfLines={1}>
@@ -179,7 +179,7 @@ export default function DiaryScreen() {
           </View>
         </View>
 
-        <View className="items-center gap-4 rounded-[32px] border border-white/60 bg-white/70 p-6 shadow-2xl shadow-emerald-500/10 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
+        <View className="items-center gap-4 rounded-[32px] border border-slate-200/60 bg-white/70 p-6 shadow-2xl shadow-emerald-500/10 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/60">
           <ProgressRing size={RING_SIZE} strokeWidth={RING_STROKE} progress={caloriePct} color={ACCENT}>
             <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{Math.round(totalCalories)}</Text>
             <Text className="text-xs text-slate-400">von {user.dailyCalorieGoal} kcal</Text>
@@ -190,7 +190,7 @@ export default function DiaryScreen() {
           </Text>
 
           {visibleNutrients.length > 0 && (
-            <View className="w-full flex-row flex-wrap gap-x-4 gap-y-4 border-t border-slate-200/50 pt-4 dark:border-white/10">
+            <View className="w-full flex-row flex-wrap gap-x-4 gap-y-4 border-t border-slate-200/50 pt-4 dark:border-slate-800/60">
               {visibleNutrients.map((key) => (
                 <NutrientTile key={key} nutrientKey={key} amount={nutrientAmounts[key]} goal={nutrientGoals[key]} />
               ))}

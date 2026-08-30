@@ -1,10 +1,23 @@
 import { BookOpen, ChartColumn, User } from 'lucide-react-native';
 import { Tabs } from 'expo-router';
+import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 const ACTIVE_COLOR = '#10b981';
+
+function TabIcon({ focused, children }: { focused: boolean; children: ReactNode }) {
+  return (
+    <View
+      className={`items-center justify-center rounded-full px-4 py-1.5 transition-colors duration-200 ease-in-out ${
+        focused ? 'bg-emerald-500/10' : 'bg-transparent'
+      }`}
+    >
+      {children}
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   const colorScheme = useColorScheme();
@@ -19,7 +32,7 @@ export default function TabsLayout() {
         tabBarShowLabel: true,
         tabBarBackground: () => (
           <View
-            className="flex-1 overflow-hidden rounded-[28px] border border-white/60 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70"
+            className="flex-1 overflow-hidden rounded-[28px] border border-slate-200/60 bg-white/70 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/70"
           />
         ),
         tabBarStyle: {
@@ -44,21 +57,33 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Tagebuch',
-          tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon focused={focused}>
+              <BookOpen color={color} size={size} />
+            </TabIcon>
+          ),
         }}
       />
       <Tabs.Screen
         name="statistik"
         options={{
           title: 'Statistik',
-          tabBarIcon: ({ color, size }) => <ChartColumn color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon focused={focused}>
+              <ChartColumn color={color} size={size} />
+            </TabIcon>
+          ),
         }}
       />
       <Tabs.Screen
         name="profil"
         options={{
           title: 'Profil',
-          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon focused={focused}>
+              <User color={color} size={size} />
+            </TabIcon>
+          ),
         }}
       />
     </Tabs>

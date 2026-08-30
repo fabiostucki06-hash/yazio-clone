@@ -31,7 +31,7 @@ function getLastNDays(days: number): { key: string; label: string }[] {
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <View className="flex-1 gap-1 rounded-2xl border border-white/60 bg-white/70 p-4 shadow-md shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
+    <View className="flex-1 gap-1 rounded-2xl border border-slate-200/60 bg-white/70 p-4 shadow-md shadow-slate-900/5 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/60">
       <Text className="text-xs text-slate-500 dark:text-slate-400">{label}</Text>
       <Text className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">{value}</Text>
     </View>
@@ -80,7 +80,7 @@ export default function StatistikScreen() {
           <StatTile label="Aktuelles Gewicht" value={user.weightKg ? `${user.weightKg} kg` : '—'} />
         </View>
 
-        <View className="gap-4 rounded-[28px] border border-white/60 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">
+        <View className="gap-4 rounded-[28px] border border-slate-200/60 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/60">
           <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Kalorien letzte 7 Tage</Text>
 
           <View style={{ height: CHART_HEIGHT }} className="flex-row items-end justify-between">

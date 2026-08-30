@@ -13,10 +13,10 @@ export function TextField({ label, suffix, className = '', onFocus, onBlur, ...i
     <View className="gap-1.5">
       {label && <Text className="text-xs font-medium tracking-tight text-slate-500 dark:text-slate-400">{label}</Text>}
       <View
-        className={`flex-row items-center gap-2 rounded-[20px] border bg-[#EDF2F7] px-5 py-3.5 dark:bg-white/5 ${
+        className={`flex-row items-center gap-2 rounded-2xl border bg-[#EDF2F7] px-5 py-3.5 transition-shadow duration-200 ease-in-out dark:bg-white/5 ${
           isFocused
-            ? 'border-[#2ECC71] shadow-md shadow-emerald-500/15 dark:border-emerald-400/70'
-            : 'border-[#D1D5DB] shadow-none dark:border-white/10'
+            ? 'border-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.15)] dark:border-emerald-400/70'
+            : 'border-slate-200/70 shadow-none dark:border-slate-800/60'
         }`}
       >
         <TextInput

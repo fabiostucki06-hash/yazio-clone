@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AiRecommendationCard } from '@/components/features/AiRecommendationCard';
 import { NUTRIENT_META, NUTRIENT_ORDER } from '@/components/features/nutrientMeta';
+import { HardRefreshButton } from '@/components/ui/HardRefreshButton';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useDiaryStore, todayKey } from '@/store/diaryStore';
@@ -172,7 +173,10 @@ export default function DiaryScreen() {
             <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Tagebuch</Text>
             <Text className="text-sm text-slate-500 dark:text-slate-400">{today}</Text>
           </View>
-          <ThemeToggle />
+          <View className="flex-row items-center gap-2">
+            <HardRefreshButton />
+            <ThemeToggle />
+          </View>
         </View>
 
         <View className="items-center gap-4 rounded-[32px] border border-white/60 bg-white/70 p-6 shadow-2xl shadow-emerald-500/10 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60">

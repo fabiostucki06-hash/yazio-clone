@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 
+import { clearCachesAndReload } from '@/utils/hardRefresh';
+
 const CHECK_INTERVAL_MS = 5 * 60 * 1000;
 
 async function fetchBuildVersion(): Promise<string | null> {
@@ -12,14 +14,6 @@ async function fetchBuildVersion(): Promise<string | null> {
   } catch {
     return null;
   }
-}
-
-async function clearCachesAndReload() {
-  if (typeof caches !== 'undefined') {
-    const keys = await caches.keys();
-    await Promise.all(keys.map((key) => caches.delete(key)));
-  }
-  window.location.reload();
 }
 
 /**

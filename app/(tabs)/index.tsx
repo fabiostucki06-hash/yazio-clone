@@ -165,8 +165,8 @@ export default function DiaryScreen() {
   };
 
   return (
-    <SafeAreaView className="relative flex-1 bg-slate-50 dark:bg-background-dark">
-      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 pt-4 pb-32">
+    <SafeAreaView className="relative flex-1 bg-slate-50 dark:bg-background-dark md:pl-64">
+      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 pt-4 pb-32 md:px-10 md:pb-12">
         <View className="flex-row items-start justify-between">
           <View>
             <Text className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Coach imi</Text>
@@ -179,36 +179,40 @@ export default function DiaryScreen() {
           </View>
         </View>
 
-        <View className="items-center gap-4 rounded-[32px] border border-slate-200/60 bg-white/70 p-6 shadow-2xl shadow-emerald-500/10 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/60">
-          <ProgressRing size={RING_SIZE} strokeWidth={RING_STROKE} progress={caloriePct} color={ACCENT}>
-            <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{Math.round(totalCalories)}</Text>
-            <Text className="text-xs text-slate-400">von {user.dailyCalorieGoal} kcal</Text>
-          </ProgressRing>
+        <View className="gap-6 md:flex-row md:items-start">
+          <View className="gap-6 md:w-[380px] md:shrink-0">
+            <View className="items-center gap-4 rounded-[32px] border border-slate-200/60 bg-white/70 p-6 shadow-2xl shadow-emerald-500/10 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/60">
+              <ProgressRing size={RING_SIZE} strokeWidth={RING_STROKE} progress={caloriePct} color={ACCENT}>
+                <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{Math.round(totalCalories)}</Text>
+                <Text className="text-xs text-slate-400">von {user.dailyCalorieGoal} kcal</Text>
+              </ProgressRing>
 
-          <Text className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-            {remainingCalories} kcal übrig
-          </Text>
+              <Text className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                {remainingCalories} kcal übrig
+              </Text>
 
-          {visibleNutrients.length > 0 && (
-            <View className="w-full flex-row flex-wrap gap-x-4 gap-y-4 border-t border-slate-200/50 pt-4 dark:border-slate-800/60">
-              {visibleNutrients.map((key) => (
-                <NutrientTile key={key} nutrientKey={key} amount={nutrientAmounts[key]} goal={nutrientGoals[key]} />
-              ))}
+              {visibleNutrients.length > 0 && (
+                <View className="w-full flex-row flex-wrap gap-x-4 gap-y-4 border-t border-slate-200/50 pt-4 dark:border-slate-800/60">
+                  {visibleNutrients.map((key) => (
+                    <NutrientTile key={key} nutrientKey={key} amount={nutrientAmounts[key]} goal={nutrientGoals[key]} />
+                  ))}
+                </View>
+              )}
             </View>
-          )}
-        </View>
 
-        <AiRecommendationCard remainingCalories={remainingCalories} remainingMacros={remainingMacros} />
+            <AiRecommendationCard remainingCalories={remainingCalories} remainingMacros={remainingMacros} />
+          </View>
 
-        <View className="gap-3">
-          <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Mahlzeiten</Text>
-          {MEAL_TYPES.map((mealType) => (
-            <MealCard key={mealType} mealType={mealType} entries={entriesByMealType[mealType]} />
-          ))}
+          <View className="flex-1 gap-3">
+            <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Mahlzeiten</Text>
+            {MEAL_TYPES.map((mealType) => (
+              <MealCard key={mealType} mealType={mealType} entries={entriesByMealType[mealType]} />
+            ))}
+          </View>
         </View>
       </ScrollView>
 
-      <Text className="absolute bottom-24 left-4 rounded-md bg-slate-50/90 px-1.5 py-0.5 text-[10px] text-slate-400 dark:bg-background-dark/90">
+      <Text className="absolute bottom-24 left-4 rounded-md bg-slate-50/90 px-1.5 py-0.5 text-[10px] text-slate-400 dark:bg-background-dark/90 md:bottom-6">
         Zuletzt aktualisiert: {getLastUpdatedLabel()} Uhr
       </Text>
     </SafeAreaView>

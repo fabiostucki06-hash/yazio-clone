@@ -66,56 +66,60 @@ export default function StatistikScreen() {
   const weightChangeLabel = weightHistory.length >= 2 ? `${weightChange > 0 ? '+' : ''}${weightChange.toFixed(1)} kg` : '—';
 
   return (
-    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-      <View className="flex-1 gap-6 px-6 pt-4 pb-32">
+    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark md:pl-64">
+      <View className="flex-1 gap-6 px-6 pt-4 pb-32 md:px-10 md:pb-12">
         <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Statistik</Text>
 
-        <View className="flex-row gap-4">
-          <StatTile label="Ø Kalorien / Tag" value={loggedDays.length > 0 ? `${averageCalories} kcal` : '—'} />
-          <StatTile label="Tage im Ziel" value={`${daysInGoal} von ${loggedDays.length}`} />
-        </View>
+        <View className="gap-6 md:flex-row md:items-start">
+          <View className="gap-4 md:w-72 md:shrink-0">
+            <View className="flex-row gap-4 md:flex-col">
+              <StatTile label="Ø Kalorien / Tag" value={loggedDays.length > 0 ? `${averageCalories} kcal` : '—'} />
+              <StatTile label="Tage im Ziel" value={`${daysInGoal} von ${loggedDays.length}`} />
+            </View>
 
-        <View className="flex-row gap-4">
-          <StatTile label="Gewichtsänderung" value={weightChangeLabel} />
-          <StatTile label="Aktuelles Gewicht" value={user.weightKg ? `${user.weightKg} kg` : '—'} />
-        </View>
-
-        <View className="gap-4 rounded-[28px] border border-slate-200/60 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/60">
-          <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Kalorien letzte 7 Tage</Text>
-
-          <View style={{ height: CHART_HEIGHT }} className="flex-row items-end justify-between">
-            {weekStats.map((day) => {
-              const hasEntries = day.calories > 0;
-              const barHeight = hasEntries ? Math.max((day.calories / maxCalories) * CHART_HEIGHT, 4) : 4;
-              const isOverGoal = day.calories > dailyCalorieGoal;
-
-              return (
-                <View key={day.key} className="items-center gap-2">
-                  <View
-                    className="w-4 rounded-t"
-                    style={{
-                      height: barHeight,
-                      backgroundColor: !hasEntries ? EMPTY_COLOR : isOverGoal ? OVER_GOAL_COLOR : IN_GOAL_COLOR,
-                    }}
-                  />
-                  <Text className="text-xs text-slate-400">{day.label}</Text>
-                </View>
-              );
-            })}
+            <View className="flex-row gap-4 md:flex-col">
+              <StatTile label="Gewichtsänderung" value={weightChangeLabel} />
+              <StatTile label="Aktuelles Gewicht" value={user.weightKg ? `${user.weightKg} kg` : '—'} />
+            </View>
           </View>
 
-          <View className="flex-row items-center gap-4 pt-1">
-            <View className="flex-row items-center gap-1.5">
-              <View className="h-2 w-2 rounded-full" style={{ backgroundColor: IN_GOAL_COLOR }} />
-              <Text className="text-xs text-slate-500 dark:text-slate-400">Im Ziel</Text>
+          <View className="flex-1 gap-4 rounded-[28px] border border-slate-200/60 bg-white/70 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/60">
+            <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Kalorien letzte 7 Tage</Text>
+
+            <View style={{ height: CHART_HEIGHT }} className="flex-row items-end justify-between">
+              {weekStats.map((day) => {
+                const hasEntries = day.calories > 0;
+                const barHeight = hasEntries ? Math.max((day.calories / maxCalories) * CHART_HEIGHT, 4) : 4;
+                const isOverGoal = day.calories > dailyCalorieGoal;
+
+                return (
+                  <View key={day.key} className="items-center gap-2">
+                    <View
+                      className="w-4 rounded-t"
+                      style={{
+                        height: barHeight,
+                        backgroundColor: !hasEntries ? EMPTY_COLOR : isOverGoal ? OVER_GOAL_COLOR : IN_GOAL_COLOR,
+                      }}
+                    />
+                    <Text className="text-xs text-slate-400">{day.label}</Text>
+                  </View>
+                );
+              })}
             </View>
-            <View className="flex-row items-center gap-1.5">
-              <View className="h-2 w-2 rounded-full" style={{ backgroundColor: OVER_GOAL_COLOR }} />
-              <Text className="text-xs text-slate-500 dark:text-slate-400">Über Ziel</Text>
-            </View>
-            <View className="flex-row items-center gap-1.5">
-              <View className="h-2 w-2 rounded-full" style={{ backgroundColor: EMPTY_COLOR }} />
-              <Text className="text-xs text-slate-500 dark:text-slate-400">Keine Daten</Text>
+
+            <View className="flex-row items-center gap-4 pt-1">
+              <View className="flex-row items-center gap-1.5">
+                <View className="h-2 w-2 rounded-full" style={{ backgroundColor: IN_GOAL_COLOR }} />
+                <Text className="text-xs text-slate-500 dark:text-slate-400">Im Ziel</Text>
+              </View>
+              <View className="flex-row items-center gap-1.5">
+                <View className="h-2 w-2 rounded-full" style={{ backgroundColor: OVER_GOAL_COLOR }} />
+                <Text className="text-xs text-slate-500 dark:text-slate-400">Über Ziel</Text>
+              </View>
+              <View className="flex-row items-center gap-1.5">
+                <View className="h-2 w-2 rounded-full" style={{ backgroundColor: EMPTY_COLOR }} />
+                <Text className="text-xs text-slate-500 dark:text-slate-400">Keine Daten</Text>
+              </View>
             </View>
           </View>
         </View>

@@ -15,6 +15,11 @@ const MEAL_LABELS: Record<MealType, string> = {
   drinks: 'Getränke',
 };
 
+// Must be a stable reference: a fresh `[]` literal returned from the zustand
+// selector on every call (when there's nothing logged for `date` yet) makes
+// useSyncExternalStore see a "new" value on every render and loop forever.
+const EMPTY_ENTRIES: MealEntry[] = [];
+
 function formatAmount(entry: MealEntry): string {
   const { foodItem, servings } = entry;
   if (foodItem.servingUnit === 'g') {
@@ -28,7 +33,7 @@ export default function MealDetailScreen() {
   const params = useLocalSearchParams<{ mealType: MealType }>();
   const mealType = params.mealType ?? 'breakfast';
   const date = todayKey();
-  const entries = useDiaryStore((state) => state.entriesByDate[date] ?? []).filter(
+  const entries = useDiaryStore((state) => state.entriesByDate[date] ?? EMPTY_ENTRIES).filter(
     (entry) => entry.mealType === mealType,
   );
   const removeEntry = useDiaryStore((state) => state.removeEntry);

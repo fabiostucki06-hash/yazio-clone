@@ -179,8 +179,11 @@ export default function ProfilScreen() {
   const lastDate = weightHistory[weightHistory.length - 1]?.date;
 
   return (
-    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
-      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 pt-4 pb-32">
+    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark md:pl-64">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-6 px-6 pt-4 pb-32 md:mx-auto md:w-full md:max-w-2xl md:px-10 md:pb-12"
+      >
         <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Profil</Text>
 
         <View className="items-center gap-3 rounded-[28px] border border-slate-200/70 bg-white py-6 shadow-2xl shadow-slate-900/10 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/60">

@@ -1,11 +1,15 @@
-import { BookOpen, ChartColumn, User } from 'lucide-react-native';
+import { BookOpen, ChartColumn, Sparkles, User } from 'lucide-react-native';
 import { Tabs } from 'expo-router';
-import type { ReactNode } from 'react';
-import { View } from 'react-native';
+import type { ComponentProps, ReactNode } from 'react';
+import { Pressable, Text, View } from 'react-native';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
 
 const ACTIVE_COLOR = '#10b981';
+
+type TabBarRenderer = NonNullable<ComponentProps<typeof Tabs>['tabBar']>;
+type TabBarProps = Parameters<TabBarRenderer>[0];
 
 function TabIcon({ focused, children }: { focused: boolean; children: ReactNode }) {
   return (
@@ -19,71 +23,108 @@ function TabIcon({ focused, children }: { focused: boolean; children: ReactNode 
   );
 }
 
-export default function TabsLayout() {
+function AppTabBar({ state, descriptors, navigation }: TabBarProps) {
   const colorScheme = useColorScheme();
+  const isDesktop = useIsDesktop();
   const isDark = colorScheme === 'dark';
+  const inactiveColor = isDark ? '#64748b' : '#94a3b8';
+
+  const items = state.routes.map((route, index) => {
+    const { options } = descriptors[route.key];
+    const isFocused = state.index === index;
+    const label = typeof options.title === 'string' ? options.title : route.name;
+    const color = isFocused ? ACTIVE_COLOR : inactiveColor;
+    const icon = options.tabBarIcon?.({ color, size: isDesktop ? 20 : 24, focused: isFocused });
+
+    function onPress() {
+      const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+      if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
+    }
+
+    return { key: route.key, label, isFocused, icon, onPress };
+  });
+
+  if (isDesktop) {
+    return (
+      <View className="absolute bottom-4 left-4 top-4 w-56 justify-start gap-1 rounded-[28px] border border-slate-200/60 bg-white/70 p-4 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/70">
+        <View className="mb-4 flex-row items-center gap-2.5 px-2 pt-1">
+          <View className="h-9 w-9 items-center justify-center rounded-2xl bg-emerald-500 shadow-md shadow-emerald-500/25">
+            <Sparkles color="#ffffff" size={16} />
+          </View>
+          <Text className="text-base font-bold tracking-tight text-slate-900 dark:text-white">Coach imi</Text>
+        </View>
+        {items.map((item) => (
+          <Pressable
+            key={item.key}
+            onPress={item.onPress}
+            className={`flex-row items-center gap-3 rounded-2xl px-4 py-3 transition-colors duration-150 ease-in-out ${
+              item.isFocused ? 'bg-emerald-500/10' : 'active:bg-slate-100/60 dark:active:bg-white/5'
+            }`}
+          >
+            {item.icon}
+            <Text
+              className={`text-sm font-semibold ${
+                item.isFocused ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'
+              }`}
+            >
+              {item.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    );
+  }
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: ACTIVE_COLOR,
-        tabBarInactiveTintColor: isDark ? '#64748b' : '#94a3b8',
-        tabBarShowLabel: true,
-        tabBarBackground: () => (
-          <View
-            className="flex-1 overflow-hidden rounded-[28px] border border-slate-200/60 bg-white/70 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/70"
-          />
-        ),
-        tabBarStyle: {
-          position: 'absolute',
-          left: 16,
-          right: 16,
-          bottom: 16,
-          height: 68,
-          paddingTop: 8,
-          borderRadius: 28,
-          borderTopWidth: 0,
-          backgroundColor: 'transparent',
-          elevation: 0,
+    <View className="absolute bottom-4 left-4 right-4">
+      <View
+        className="h-[68px] flex-row items-center overflow-hidden rounded-[28px] border border-slate-200/60 bg-white/70 px-1 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/70"
+        style={{
           shadowColor: '#0f172a',
           shadowOpacity: isDark ? 0.4 : 0.08,
           shadowRadius: 24,
           shadowOffset: { width: 0, height: 8 },
-        },
-      }}
-    >
+        }}
+      >
+        {items.map((item) => (
+          <Pressable key={item.key} onPress={item.onPress} className="flex-1 items-center justify-center gap-0.5">
+            <TabIcon focused={item.isFocused}>{item.icon}</TabIcon>
+            <Text
+              className={`text-[11px] font-medium ${
+                item.isFocused ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'
+              }`}
+            >
+              {item.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+export default function TabsLayout() {
+  return (
+    <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <AppTabBar {...props} />}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Tagebuch',
-          tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon focused={focused}>
-              <BookOpen color={color} size={size} />
-            </TabIcon>
-          ),
+          tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="statistik"
         options={{
           title: 'Statistik',
-          tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon focused={focused}>
-              <ChartColumn color={color} size={size} />
-            </TabIcon>
-          ),
+          tabBarIcon: ({ color, size }) => <ChartColumn color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="profil"
         options={{
           title: 'Profil',
-          tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon focused={focused}>
-              <User color={color} size={size} />
-            </TabIcon>
-          ),
+          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       />
     </Tabs>

@@ -10,6 +10,7 @@ import { ProgressRing } from '@/components/ui/ProgressRing';
 import { useDiaryStore, todayKey } from '@/store/diaryStore';
 import { useUserStore } from '@/store/userStore';
 import type { Macros, MealEntry, MealType, Micronutrients, NutrientKey } from '@/types';
+import { getLastUpdatedLabel } from '@/utils/lastUpdated';
 import { MICRONUTRIENT_GOALS } from '@/utils/nutritionCalculator';
 
 interface IconProps {
@@ -31,20 +32,6 @@ const ACCENT = '#10b981';
 const RING_SIZE = 176;
 const RING_STROKE = 16;
 const EMPTY_ENTRIES: MealEntry[] = [];
-
-function getLastUpdatedLabel(): string {
-  if (process.env.EXPO_PUBLIC_BUILD_TIME) {
-    return process.env.EXPO_PUBLIC_BUILD_TIME;
-  }
-
-  return new Date().toLocaleString('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 function NutrientTile({ nutrientKey, amount, goal }: { nutrientKey: NutrientKey; amount: number; goal: number }) {
   const { label, unit, color, Icon } = NUTRIENT_META[nutrientKey];

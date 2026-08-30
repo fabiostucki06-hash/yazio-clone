@@ -11,6 +11,7 @@ import { TextField } from '@/components/ui/TextField';
 import { pushSnapshot } from '@/services/cloudSync';
 import { useSyncStore } from '@/store/syncStore';
 import { useUserStore } from '@/store/userStore';
+import { getLastUpdatedLabel } from '@/utils/lastUpdated';
 import type { ActivityLevel, Gender, Goal } from '@/utils/nutritionCalculator';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -209,6 +210,10 @@ export default function OnboardingScreen() {
                   Bestätige deine E-Mail-Adresse über den Link, den wir dir geschickt haben, und melde dich anschließend an.
                 </Text>
               )}
+
+              <Text className="text-center text-[10px] text-slate-400 dark:text-slate-500">
+                Zuletzt aktualisiert: {getLastUpdatedLabel()} Uhr
+              </Text>
             </Card>
           )}
 

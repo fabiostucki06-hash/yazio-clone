@@ -1,6 +1,7 @@
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Camera, Check, ImagePlus, RotateCcw, Sparkles, X } from 'lucide-react-native';
+import { AlertTriangle, Camera, Check, ImagePlus, Plus, RotateCcw, Sparkles, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,9 +9,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/TextField';
-import { analyzeFoodPhoto, type VisionAnalysisResult } from '@/services/visionFoodApi';
+import { analyzeFoodPhoto, type DetectedFoodItem, type VisionAnalysisResult } from '@/services/visionFoodApi';
 import { useDiaryStore, todayKey } from '@/store/diaryStore';
-import type { FoodItem, MealType } from '@/types';
+import type { FoodItem, MealType, Micronutrients } from '@/types';
 
 const MEAL_LABELS: Record<MealType, string> = {
   breakfast: 'Frühstück',
@@ -23,14 +24,79 @@ const MEAL_LABELS: Record<MealType, string> = {
 const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
   mediaTypes: ['images'],
   base64: true,
-  quality: 0.5,
+  quality: 0.8,
   allowsEditing: true,
   aspect: [4, 3],
 };
 
+// Cap the longest edge before sending to the Vision API: large enough to keep
+// ingredient-level detail, small enough to avoid oversized payloads/timeouts.
+const MAX_ANALYSIS_DIMENSION = 1280;
+
+interface EditableItem {
+  id: string;
+  name: string;
+  cookingMethod: string | null;
+  grams: string;
+  kcalPer100g: string;
+  carbsPer100g: string;
+  proteinPer100g: string;
+  fatPer100g: string;
+  micronutrientsPer100g: Micronutrients;
+  confidence: number;
+  needsVerification: boolean;
+}
+
 function parseNumber(value: string, fallback: number): number {
   const parsed = Number.parseFloat(value.replace(',', '.'));
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+function toEditableItem(detected: DetectedFoodItem, index: number): EditableItem {
+  return {
+    id: `item-${index}-${Date.now()}`,
+    name: detected.name,
+    cookingMethod: detected.cookingMethod,
+    grams: String(Math.round(detected.estimatedGrams)),
+    kcalPer100g: String(Math.round(detected.caloriesPer100g)),
+    carbsPer100g: String(Math.round(detected.macrosPer100g.carbs)),
+    proteinPer100g: String(Math.round(detected.macrosPer100g.protein)),
+    fatPer100g: String(Math.round(detected.macrosPer100g.fat)),
+    micronutrientsPer100g: detected.micronutrientsPer100g,
+    confidence: detected.confidence,
+    needsVerification: detected.needsVerification,
+  };
+}
+
+function makeBlankItem(): EditableItem {
+  return {
+    id: `manual-${Date.now()}-${Math.round(Math.random() * 1e6)}`,
+    name: '',
+    cookingMethod: null,
+    grams: '100',
+    kcalPer100g: '',
+    carbsPer100g: '',
+    proteinPer100g: '',
+    fatPer100g: '',
+    micronutrientsPer100g: { fiber: 0, sugar: 0, sodium: 0, vitaminC: 0 },
+    confidence: 1,
+    needsVerification: false,
+  };
+}
+
+/** Resizes/recompresses the picked photo before it's sent to the Vision API. Falls back to the picker's own base64 if manipulation fails for any reason. */
+async function prepareImageForAnalysis(picked: ImagePicker.ImagePickerAsset): Promise<string | null> {
+  try {
+    const context = ImageManipulator.manipulate(picked.uri);
+    if (picked.width > MAX_ANALYSIS_DIMENSION) {
+      context.resize({ width: MAX_ANALYSIS_DIMENSION });
+    }
+    const rendered = await context.renderAsync();
+    const saved = await rendered.saveAsync({ compress: 0.7, format: SaveFormat.JPEG, base64: true });
+    return saved.base64 ?? picked.base64 ?? null;
+  } catch {
+    return picked.base64 ?? null;
+  }
 }
 
 export default function AnalyzeFoodScreen() {
@@ -41,67 +107,75 @@ export default function AnalyzeFoodScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [pickerError, setPickerError] = useState<string | null>(null);
-  const [result, setResult] = useState<VisionAnalysisResult | null>(null);
-
-  const [name, setName] = useState('');
-  const [grams, setGrams] = useState('');
-  const [kcalPer100g, setKcalPer100g] = useState('');
-  const [carbsPer100g, setCarbsPer100g] = useState('');
-  const [proteinPer100g, setProteinPer100g] = useState('');
-  const [fatPer100g, setFatPer100g] = useState('');
+  const [analysisSource, setAnalysisSource] = useState<VisionAnalysisResult['source'] | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [items, setItems] = useState<EditableItem[]>([]);
 
   async function runAnalysis(picked: ImagePicker.ImagePickerAsset) {
     setImageUri(picked.uri);
-    setResult(null);
+    setItems([]);
+    setAnalysisSource(null);
+    setNotice(null);
     setPickerError(null);
 
-    if (!picked.base64) {
-      setPickerError('Foto konnte nicht gelesen werden. Bitte erneut versuchen.');
+    const base64 = await prepareImageForAnalysis(picked);
+    if (!base64) {
+      setPickerError('Foto konnte nicht gelesen werden. Bitte ein anderes Bild versuchen.');
       return;
     }
 
     setAnalyzing(true);
     try {
-      const analysis = await analyzeFoodPhoto(picked.base64);
-      setResult(analysis);
-      setName(analysis.name);
-      setGrams(String(Math.round(analysis.estimatedGrams)));
-      setKcalPer100g(String(Math.round(analysis.caloriesPer100g)));
-      setCarbsPer100g(String(Math.round(analysis.macrosPer100g.carbs)));
-      setProteinPer100g(String(Math.round(analysis.macrosPer100g.protein)));
-      setFatPer100g(String(Math.round(analysis.macrosPer100g.fat)));
+      const analysis = await analyzeFoodPhoto(base64);
+      setAnalysisSource(analysis.source);
+      setNotice(analysis.notice);
+      setItems(analysis.items.map(toEditableItem));
+    } catch {
+      setPickerError('Die Bildanalyse ist fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
       setAnalyzing(false);
     }
   }
 
   async function handleTakePhoto() {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      setPickerError('Kamera-Zugriff wurde nicht erlaubt.');
-      return;
-    }
-    const picked = await ImagePicker.launchCameraAsync(PICKER_OPTIONS);
-    if (!picked.canceled && picked.assets[0]) {
-      await runAnalysis(picked.assets[0]);
+    setPickerError(null);
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        setPickerError('Kamera-Zugriff wurde nicht erlaubt.');
+        return;
+      }
+      const picked = await ImagePicker.launchCameraAsync(PICKER_OPTIONS);
+      if (!picked.canceled && picked.assets[0]) {
+        await runAnalysis(picked.assets[0]);
+      }
+    } catch {
+      setPickerError('Kamera konnte nicht geöffnet werden.');
     }
   }
 
   async function handlePickFromLibrary() {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      setPickerError('Zugriff auf die Fotomediathek wurde nicht erlaubt.');
-      return;
-    }
-    const picked = await ImagePicker.launchImageLibraryAsync(PICKER_OPTIONS);
-    if (!picked.canceled && picked.assets[0]) {
-      await runAnalysis(picked.assets[0]);
+    setPickerError(null);
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setPickerError('Zugriff auf die Fotomediathek wurde nicht erlaubt.');
+        return;
+      }
+      const picked = await ImagePicker.launchImageLibraryAsync(PICKER_OPTIONS);
+      if (!picked.canceled && picked.assets[0]) {
+        await runAnalysis(picked.assets[0]);
+      }
+    } catch {
+      setPickerError('Foto konnte nicht ausgewählt werden. Möglicherweise ein nicht unterstütztes Format.');
     }
   }
 
   function handleReset() {
     setImageUri(null);
-    setResult(null);
+    setItems([]);
+    setAnalysisSource(null);
+    setNotice(null);
     setPickerError(null);
   }
 
@@ -109,35 +183,74 @@ export default function AnalyzeFoodScreen() {
     router.back();
   }
 
-  const parsedGrams = parseNumber(grams, 0);
-  const totals = useMemo(
-    () => ({
-      kcal: (parseNumber(kcalPer100g, 0) * parsedGrams) / 100,
-      carbs: (parseNumber(carbsPer100g, 0) * parsedGrams) / 100,
-      protein: (parseNumber(proteinPer100g, 0) * parsedGrams) / 100,
-      fat: (parseNumber(fatPer100g, 0) * parsedGrams) / 100,
-    }),
-    [kcalPer100g, carbsPer100g, proteinPer100g, fatPer100g, parsedGrams],
+  function updateItem(id: string, patch: Partial<EditableItem>) {
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+  }
+
+  function removeItem(id: string) {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  }
+
+  function addManualItem() {
+    setItems((prev) => [...prev, makeBlankItem()]);
+  }
+
+  const itemTotals = useMemo(
+    () =>
+      items.map((item) => {
+        const grams = parseNumber(item.grams, 0);
+        return {
+          id: item.id,
+          grams,
+          kcal: (parseNumber(item.kcalPer100g, 0) * grams) / 100,
+          carbs: (parseNumber(item.carbsPer100g, 0) * grams) / 100,
+          protein: (parseNumber(item.proteinPer100g, 0) * grams) / 100,
+          fat: (parseNumber(item.fatPer100g, 0) * grams) / 100,
+        };
+      }),
+    [items],
   );
 
+  const grandTotal = useMemo(
+    () =>
+      itemTotals.reduce(
+        (sum, t) => ({
+          kcal: sum.kcal + t.kcal,
+          carbs: sum.carbs + t.carbs,
+          protein: sum.protein + t.protein,
+          fat: sum.fat + t.fat,
+        }),
+        { kcal: 0, carbs: 0, protein: 0, fat: 0 },
+      ),
+    [itemTotals],
+  );
+
+  const validItemCount = items.filter((item) => item.name.trim() && parseNumber(item.grams, 0) > 0).length;
+
   function handleSave() {
-    if (!result || parsedGrams <= 0) return;
+    if (validItemCount === 0) return;
 
-    const foodItem: FoodItem = {
-      id: `vision-${Date.now()}`,
-      name: name.trim() || result.name,
-      caloriesPerServing: parseNumber(kcalPer100g, 0),
-      macrosPerServing: {
-        carbs: parseNumber(carbsPer100g, 0),
-        protein: parseNumber(proteinPer100g, 0),
-        fat: parseNumber(fatPer100g, 0),
-      },
-      micronutrientsPerServing: result.micronutrientsPer100g,
-      servingSize: 100,
-      servingUnit: 'g',
-    };
+    for (const item of items) {
+      const grams = parseNumber(item.grams, 0);
+      if (!item.name.trim() || grams <= 0) continue;
 
-    addEntry(todayKey(), foodItem, mealType, parsedGrams / 100);
+      const foodItem: FoodItem = {
+        id: `vision-${Date.now()}-${Math.round(Math.random() * 1e6)}`,
+        name: item.name.trim(),
+        caloriesPerServing: parseNumber(item.kcalPer100g, 0),
+        macrosPerServing: {
+          carbs: parseNumber(item.carbsPer100g, 0),
+          protein: parseNumber(item.proteinPer100g, 0),
+          fat: parseNumber(item.fatPer100g, 0),
+        },
+        micronutrientsPerServing: item.micronutrientsPer100g,
+        servingSize: 100,
+        servingUnit: 'g',
+      };
+
+      addEntry(todayKey(), foodItem, mealType, grams / 100);
+    }
+
     router.back();
   }
 
@@ -200,7 +313,7 @@ export default function AnalyzeFoodScreen() {
           </View>
         )}
 
-        {result && !analyzing && (
+        {analysisSource && !analyzing && (
           <>
             <View className="gap-3 rounded-[28px] border border-white/20 bg-emerald-500/90 p-4 shadow-2xl shadow-emerald-500/30 backdrop-blur-xl">
               <View className="flex-row items-center gap-3">
@@ -208,74 +321,135 @@ export default function AnalyzeFoodScreen() {
                   <Sparkles color="#ffffff" size={16} />
                 </View>
                 <Text className="flex-1 text-sm font-semibold text-white">
-                  {result.source === 'ai'
-                    ? 'KI-Erkennung abgeschlossen'
+                  {analysisSource === 'ai'
+                    ? `${items.length} Lebensmittel erkannt`
                     : 'Keine KI verfügbar – Schätzwerte zum Anpassen'}
                 </Text>
               </View>
             </View>
 
-            <Card className="gap-4">
-              <TextField label="Name" value={name} onChangeText={setName} />
-              <TextField
-                label="Menge"
-                keyboardType="decimal-pad"
-                value={grams}
-                onChangeText={setGrams}
-                suffix="g"
-              />
-
-              <Text className="pt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                Nährwerte pro 100g (bearbeitbar)
-              </Text>
-              <View className="flex-row gap-3">
-                <View className="flex-1">
-                  <TextField label="Kcal" keyboardType="decimal-pad" value={kcalPer100g} onChangeText={setKcalPer100g} />
-                </View>
-                <View className="flex-1">
-                  <TextField label="Carbs" keyboardType="decimal-pad" value={carbsPer100g} onChangeText={setCarbsPer100g} suffix="g" />
-                </View>
+            {notice && (
+              <View className="flex-row items-start gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3">
+                <AlertTriangle color="#d97706" size={16} />
+                <Text className="flex-1 text-xs text-amber-700 dark:text-amber-400">{notice}</Text>
               </View>
-              <View className="flex-row gap-3">
-                <View className="flex-1">
-                  <TextField label="Protein" keyboardType="decimal-pad" value={proteinPer100g} onChangeText={setProteinPer100g} suffix="g" />
-                </View>
-                <View className="flex-1">
-                  <TextField label="Fett" keyboardType="decimal-pad" value={fatPer100g} onChangeText={setFatPer100g} suffix="g" />
-                </View>
-              </View>
-            </Card>
+            )}
 
-            <Card className="gap-2">
-              <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                Gesamt für {parsedGrams > 0 ? Math.round(parsedGrams) : 0}g
-              </Text>
-              <View className="flex-row items-center justify-between">
-                <Text className="text-sm text-slate-600 dark:text-slate-300">Kalorien</Text>
-                <Text className="text-base font-bold text-slate-900 dark:text-white">
-                  {Math.round(totals.kcal)} kcal
+            {items.length === 0 && (
+              <Card className="items-center gap-3">
+                <Text className="text-center text-sm text-slate-500 dark:text-slate-400">
+                  Es wurde kein Lebensmittel erkannt.
                 </Text>
-              </View>
-              <View className="flex-row items-center justify-between">
-                <Text className="text-sm text-slate-600 dark:text-slate-300">Kohlenhydrate</Text>
-                <Text className="text-sm text-slate-900 dark:text-white">{Math.round(totals.carbs)} g</Text>
-              </View>
-              <View className="flex-row items-center justify-between">
-                <Text className="text-sm text-slate-600 dark:text-slate-300">Eiweiß</Text>
-                <Text className="text-sm text-slate-900 dark:text-white">{Math.round(totals.protein)} g</Text>
-              </View>
-              <View className="flex-row items-center justify-between">
-                <Text className="text-sm text-slate-600 dark:text-slate-300">Fett</Text>
-                <Text className="text-sm text-slate-900 dark:text-white">{Math.round(totals.fat)} g</Text>
-              </View>
-            </Card>
+                <Button label="Manuell hinzufügen" variant="secondary" icon={<Plus color="#10b981" size={16} />} onPress={addManualItem} />
+              </Card>
+            )}
 
-            <Button
-              label="Ins Tagebuch speichern"
-              icon={<Check color="#ffffff" size={18} />}
-              onPress={handleSave}
-              disabled={parsedGrams <= 0}
-            />
+            {items.map((item, index) => {
+              const totals = itemTotals[index];
+              return (
+                <Card key={item.id} className="gap-4">
+                  <View className="flex-row items-start justify-between gap-2">
+                    <View className="flex-1">
+                      <TextField
+                        label={`Lebensmittel ${index + 1}`}
+                        value={item.name}
+                        onChangeText={(text) => updateItem(item.id, { name: text })}
+                        placeholder="Name"
+                      />
+                      {item.cookingMethod && (
+                        <Text className="pt-1 text-xs text-slate-400">Zubereitung: {item.cookingMethod}</Text>
+                      )}
+                    </View>
+                    <Pressable
+                      className="mt-6 h-8 w-8 items-center justify-center rounded-full bg-slate-100/60 active:opacity-80 dark:bg-white/5"
+                      onPress={() => removeItem(item.id)}
+                    >
+                      <X color="#64748b" size={14} />
+                    </Pressable>
+                  </View>
+
+                  {item.needsVerification && (
+                    <View className="flex-row items-center gap-1.5 self-start rounded-full bg-amber-500/10 px-2.5 py-1">
+                      <AlertTriangle color="#d97706" size={12} />
+                      <Text className="text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                        Unsicher ({Math.round(item.confidence * 100)}% Konfidenz) – bitte prüfen
+                      </Text>
+                    </View>
+                  )}
+
+                  <TextField label="Menge" keyboardType="decimal-pad" value={item.grams} onChangeText={(text) => updateItem(item.id, { grams: text })} suffix="g" />
+
+                  <Text className="pt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                    Nährwerte pro 100g (bearbeitbar)
+                  </Text>
+                  <View className="flex-row gap-3">
+                    <View className="flex-1">
+                      <TextField label="Kcal" keyboardType="decimal-pad" value={item.kcalPer100g} onChangeText={(text) => updateItem(item.id, { kcalPer100g: text })} />
+                    </View>
+                    <View className="flex-1">
+                      <TextField label="Carbs" keyboardType="decimal-pad" value={item.carbsPer100g} onChangeText={(text) => updateItem(item.id, { carbsPer100g: text })} suffix="g" />
+                    </View>
+                  </View>
+                  <View className="flex-row gap-3">
+                    <View className="flex-1">
+                      <TextField label="Protein" keyboardType="decimal-pad" value={item.proteinPer100g} onChangeText={(text) => updateItem(item.id, { proteinPer100g: text })} suffix="g" />
+                    </View>
+                    <View className="flex-1">
+                      <TextField label="Fett" keyboardType="decimal-pad" value={item.fatPer100g} onChangeText={(text) => updateItem(item.id, { fatPer100g: text })} suffix="g" />
+                    </View>
+                  </View>
+
+                  <Text className="text-right text-xs text-slate-400">
+                    {Math.round(totals.kcal)} kcal für {Math.round(totals.grams)}g
+                  </Text>
+                </Card>
+              );
+            })}
+
+            {items.length > 0 && (
+              <Pressable
+                className="flex-row items-center justify-center gap-2 rounded-2xl border border-white/60 bg-white/70 px-4 py-3 shadow-md shadow-slate-900/5 backdrop-blur-xl active:opacity-80 dark:border-white/10 dark:bg-slate-900/60"
+                onPress={addManualItem}
+              >
+                <Plus color="#10b981" size={16} />
+                <Text className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                  Weiteres Lebensmittel hinzufügen
+                </Text>
+              </Pressable>
+            )}
+
+            {items.length > 0 && (
+              <Card className="gap-2">
+                <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Gesamt</Text>
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-sm text-slate-600 dark:text-slate-300">Kalorien</Text>
+                  <Text className="text-base font-bold text-slate-900 dark:text-white">
+                    {Math.round(grandTotal.kcal)} kcal
+                  </Text>
+                </View>
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-sm text-slate-600 dark:text-slate-300">Kohlenhydrate</Text>
+                  <Text className="text-sm text-slate-900 dark:text-white">{Math.round(grandTotal.carbs)} g</Text>
+                </View>
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-sm text-slate-600 dark:text-slate-300">Eiweiß</Text>
+                  <Text className="text-sm text-slate-900 dark:text-white">{Math.round(grandTotal.protein)} g</Text>
+                </View>
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-sm text-slate-600 dark:text-slate-300">Fett</Text>
+                  <Text className="text-sm text-slate-900 dark:text-white">{Math.round(grandTotal.fat)} g</Text>
+                </View>
+              </Card>
+            )}
+
+            {items.length > 0 && (
+              <Button
+                label={`Ins Tagebuch speichern${validItemCount > 1 ? ` (${validItemCount} Einträge)` : ''}`}
+                icon={<Check color="#ffffff" size={18} />}
+                onPress={handleSave}
+                disabled={validItemCount === 0}
+              />
+            )}
           </>
         )}
       </ScrollView>

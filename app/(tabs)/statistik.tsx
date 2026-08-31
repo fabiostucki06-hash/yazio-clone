@@ -66,18 +66,18 @@ export default function StatistikScreen() {
   const weightChangeLabel = weightHistory.length >= 2 ? `${weightChange > 0 ? '+' : ''}${weightChange.toFixed(1)} kg` : '—';
 
   return (
-    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark md:pl-64">
-      <View className="flex-1 gap-6 px-6 pt-4 pb-32 md:px-10 md:pb-12">
+    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark lg:pl-64">
+      <View className="flex-1 gap-6 px-6 pt-4 pb-32 lg:px-10 lg:pb-12">
         <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Statistik</Text>
 
-        <View className="gap-6 md:flex-row md:items-start">
-          <View className="gap-4 md:w-72 md:shrink-0">
-            <View className="flex-row gap-4 md:flex-col">
+        <View className="gap-6 lg:flex-row lg:items-start">
+          <View className="gap-4 lg:w-72 lg:shrink-0">
+            <View className="flex-row gap-4 lg:flex-col">
               <StatTile label="Ø Kalorien / Tag" value={loggedDays.length > 0 ? `${averageCalories} kcal` : '—'} />
               <StatTile label="Tage im Ziel" value={`${daysInGoal} von ${loggedDays.length}`} />
             </View>
 
-            <View className="flex-row gap-4 md:flex-col">
+            <View className="flex-row gap-4 lg:flex-col">
               <StatTile label="Gewichtsänderung" value={weightChangeLabel} />
               <StatTile label="Aktuelles Gewicht" value={user.weightKg ? `${user.weightKg} kg` : '—'} />
             </View>

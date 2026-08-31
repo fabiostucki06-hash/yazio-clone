@@ -5,13 +5,13 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AiRecommendationCard } from '@/components/features/AiRecommendationCard';
-import { NUTRIENT_META, NUTRIENT_ORDER } from '@/components/features/nutrientMeta';
+import { NUTRIENT_META, NUTRIENT_ORDER, sumEntryNutrients } from '@/components/features/nutrientMeta';
 import { HardRefreshButton } from '@/components/ui/HardRefreshButton';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useDiaryStore, todayKey } from '@/store/diaryStore';
 import { useUserStore } from '@/store/userStore';
-import type { Macros, MealEntry, MealType, Micronutrients, NutrientKey } from '@/types';
+import type { Macros, MealEntry, MealType, NutrientKey } from '@/types';
 import { getLastUpdatedLabel } from '@/utils/lastUpdated';
 import { MICRONUTRIENT_GOALS } from '@/utils/nutritionCalculator';
 
@@ -134,25 +134,8 @@ export default function DiaryScreen() {
   }
 
   const totalCalories = entries.reduce((sum, entry) => sum + entry.foodItem.caloriesPerServing * entry.servings, 0);
-  const totalMacros: Macros = entries.reduce(
-    (acc, entry) => ({
-      carbs: acc.carbs + entry.foodItem.macrosPerServing.carbs * entry.servings,
-      protein: acc.protein + entry.foodItem.macrosPerServing.protein * entry.servings,
-      fat: acc.fat + entry.foodItem.macrosPerServing.fat * entry.servings,
-    }),
-    { carbs: 0, protein: 0, fat: 0 },
-  );
-  const totalMicros: Micronutrients = entries.reduce(
-    (acc, entry) => ({
-      fiber: acc.fiber + entry.foodItem.micronutrientsPerServing.fiber * entry.servings,
-      sugar: acc.sugar + entry.foodItem.micronutrientsPerServing.sugar * entry.servings,
-      sodium: acc.sodium + entry.foodItem.micronutrientsPerServing.sodium * entry.servings,
-      vitaminC: acc.vitaminC + entry.foodItem.micronutrientsPerServing.vitaminC * entry.servings,
-    }),
-    { fiber: 0, sugar: 0, sodium: 0, vitaminC: 0 },
-  );
-
-  const nutrientAmounts: Record<NutrientKey, number> = { ...totalMacros, ...totalMicros };
+  const nutrientAmounts = sumEntryNutrients(entries);
+  const totalMacros: Macros = { carbs: nutrientAmounts.carbs, protein: nutrientAmounts.protein, fat: nutrientAmounts.fat };
   const nutrientGoals: Record<NutrientKey, number> = { ...user.dailyMacroGoal, ...MICRONUTRIENT_GOALS };
   const visibleNutrients = NUTRIENT_ORDER.filter((key) => user.visibleNutrients[key]);
 
@@ -165,8 +148,8 @@ export default function DiaryScreen() {
   };
 
   return (
-    <SafeAreaView className="relative flex-1 bg-slate-50 dark:bg-background-dark md:pl-64">
-      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 pt-4 pb-32 md:px-10 md:pb-12">
+    <SafeAreaView className="relative flex-1 bg-slate-50 dark:bg-background-dark lg:pl-64">
+      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-6 pt-4 pb-32 lg:px-10 lg:pb-12">
         <View className="flex-row items-start justify-between">
           <View>
             <Text className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Coach imi</Text>
@@ -179,8 +162,8 @@ export default function DiaryScreen() {
           </View>
         </View>
 
-        <View className="gap-6 md:flex-row md:items-start">
-          <View className="gap-6 md:w-[380px] md:shrink-0">
+        <View className="gap-6 lg:flex-row lg:items-start">
+          <View className="gap-6 lg:w-[380px] lg:shrink-0">
             <View className="items-center gap-4 rounded-[32px] border border-slate-200/60 bg-white/70 p-6 shadow-2xl shadow-emerald-500/10 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/60">
               <ProgressRing size={RING_SIZE} strokeWidth={RING_STROKE} progress={caloriePct} color={ACCENT}>
                 <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{Math.round(totalCalories)}</Text>
@@ -212,7 +195,7 @@ export default function DiaryScreen() {
         </View>
       </ScrollView>
 
-      <Text className="absolute bottom-24 left-4 rounded-md bg-slate-50/90 px-1.5 py-0.5 text-[10px] text-slate-400 dark:bg-background-dark/90 md:bottom-6">
+      <Text className="absolute bottom-24 left-4 rounded-md bg-slate-50/90 px-1.5 py-0.5 text-[10px] text-slate-400 dark:bg-background-dark/90 lg:bottom-6">
         Zuletzt aktualisiert: {getLastUpdatedLabel()} Uhr
       </Text>
     </SafeAreaView>

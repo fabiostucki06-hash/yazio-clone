@@ -1,10 +1,10 @@
 import { Droplet, Egg, Plus, Scale, Target, Wheat } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CloudSyncCard } from '@/components/features/CloudSyncCard';
-import { NUTRIENT_META, NUTRIENT_ORDER } from '@/components/features/nutrientMeta';
+import { NutrientVisibilitySelector } from '@/components/features/NutrientVisibilitySelector';
 import { ACTIVITY_OPTIONS, ChipGroup, GENDER_OPTIONS, GOAL_OPTIONS, THEME_OPTIONS } from '@/components/features/ProfileOptions';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -179,10 +179,10 @@ export default function ProfilScreen() {
   const lastDate = weightHistory[weightHistory.length - 1]?.date;
 
   return (
-    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark md:pl-64">
+    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark lg:pl-64">
       <ScrollView
         className="flex-1"
-        contentContainerClassName="gap-6 px-6 pt-4 pb-32 md:mx-auto md:w-full md:max-w-2xl md:px-10 md:pb-12"
+        contentContainerClassName="gap-6 px-6 pt-4 pb-32 lg:mx-auto lg:w-full lg:max-w-2xl lg:px-10 lg:pb-12"
       >
         <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Profil</Text>
 
@@ -257,30 +257,7 @@ export default function ProfilScreen() {
         </Card>
 
         <Card className="gap-1">
-          <Text className="pb-2 text-sm font-semibold text-slate-500 dark:text-slate-400">Sichtbare Nährstoffe</Text>
-          {NUTRIENT_ORDER.map((key, index) => {
-            const { label, Icon, color } = NUTRIENT_META[key];
-            const isVisible = user.visibleNutrients[key];
-            return (
-              <View
-                key={key}
-                className={`flex-row items-center justify-between py-3 ${
-                  index > 0 ? 'border-t border-slate-200/50 dark:border-slate-800/60' : ''
-                }`}
-              >
-                <View className="flex-row items-center gap-3">
-                  <Icon color={color} size={18} />
-                  <Text className="text-sm text-slate-700 dark:text-slate-200">{label}</Text>
-                </View>
-                <Switch
-                  value={isVisible}
-                  onValueChange={() => toggleNutrientVisibility(key)}
-                  trackColor={{ false: '#cbd5e1', true: '#10b981' }}
-                  thumbColor="#ffffff"
-                />
-              </View>
-            );
-          })}
+          <NutrientVisibilitySelector visibleNutrients={user.visibleNutrients} onToggle={toggleNutrientVisibility} />
         </Card>
 
         <Card className="gap-4">

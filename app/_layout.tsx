@@ -35,11 +35,13 @@ export default function RootLayout() {
 
   if (Platform.OS !== 'web') return stack;
 
-  // Below the `md` breakpoint, keep the narrow phone-frame look. At `md` and
-  // above, widen into a desktop dashboard capped at a sane max width.
+  // Below the `lg` breakpoint (tablets and phones), keep the narrow
+  // phone-frame look. At `lg` (1024px) and above, widen into a desktop
+  // dashboard capped at a sane max width so ultra-wide screens don't stretch
+  // content awkwardly.
   return (
     <View className="flex-1 items-center bg-slate-100 dark:bg-slate-950">
-      <View className="w-full max-w-[480px] flex-1 md:max-w-7xl">{stack}</View>
+      <View className="w-full max-w-[480px] flex-1 lg:max-w-7xl">{stack}</View>
     </View>
   );
 }

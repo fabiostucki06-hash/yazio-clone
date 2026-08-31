@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/TextField';
+import { useDiaryStore, todayKey } from '@/store/diaryStore';
 import { useUiStore } from '@/store/uiStore';
 import type { MealType } from '@/types';
 
@@ -22,7 +23,7 @@ export default function LogQuantityScreen() {
   const foodItem = useUiStore((state) => state.pendingFoodItem);
   const mealType = useUiStore((state) => state.pendingMealType);
   const clearPendingSelection = useUiStore((state) => state.clearPendingSelection);
-  const addToCart = useUiStore((state) => state.addToCart);
+  const addEntry = useDiaryStore((state) => state.addEntry);
 
   const isGramBased = foodItem?.servingUnit === 'g';
   const [amount, setAmount] = useState(isGramBased ? String(foodItem?.servingSize ?? 100) : '1');
@@ -52,9 +53,12 @@ export default function LogQuantityScreen() {
 
   function handleAdd() {
     if (!foodItem || servings <= 0) return;
-    addToCart(foodItem, servings);
+    addEntry(todayKey(), foodItem, mealType, servings);
     clearPendingSelection();
-    router.back();
+    // Dismisses the search/scanner screens above it and lands on the meal's
+    // detail view (or replaces the current screen with it if it isn't
+    // already on the stack), so totals are visible immediately.
+    router.dismissTo({ pathname: '/meal-detail', params: { mealType } });
   }
 
   if (!foodItem) {
@@ -115,7 +119,7 @@ export default function LogQuantityScreen() {
           </View>
         </Card>
 
-        <Button label="Hinzufügen" onPress={handleAdd} disabled={servings <= 0} />
+        <Button label="Bestätigen" onPress={handleAdd} disabled={servings <= 0} />
       </View>
     </SafeAreaView>
   );

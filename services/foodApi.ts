@@ -34,8 +34,47 @@ interface OffNutriments {
   fat_100g?: number;
   fiber_100g?: number;
   sugars_100g?: number;
+  'saturated-fat_100g'?: number;
+  'monounsaturated-fat_100g'?: number;
+  'polyunsaturated-fat_100g'?: number;
+  cholesterol_100g?: number;
   sodium_100g?: number;
+  potassium_100g?: number;
+  calcium_100g?: number;
+  iron_100g?: number;
+  magnesium_100g?: number;
+  zinc_100g?: number;
+  copper_100g?: number;
+  manganese_100g?: number;
+  selenium_100g?: number;
+  iodine_100g?: number;
+  'vitamin-a_100g'?: number;
+  'vitamin-b1_100g'?: number;
+  'vitamin-b2_100g'?: number;
+  'vitamin-pp_100g'?: number;
+  'pantothenic-acid_100g'?: number;
+  'vitamin-b6_100g'?: number;
+  biotin_100g?: number;
+  'vitamin-b9_100g'?: number;
+  'vitamin-b12_100g'?: number;
   'vitamin-c_100g'?: number;
+  'vitamin-d_100g'?: number;
+  'vitamin-e_100g'?: number;
+  'vitamin-k_100g'?: number;
+}
+
+// Open Food Facts reports every `_100g` nutrient in grams, regardless of the
+// unit it's conventionally displayed in - convert to mg/µg for the ones we
+// track in those units. Undefined stays undefined (field simply not reported).
+function gramsTo(factor: number, value: number | undefined): number | undefined {
+  return value === undefined ? undefined : value * factor;
+}
+const gramsToMg = (value: number | undefined) => gramsTo(1000, value);
+const gramsToMcg = (value: number | undefined) => gramsTo(1_000_000, value);
+
+function sumOptional(...values: (number | undefined)[]): number | undefined {
+  const present = values.filter((value): value is number => value !== undefined);
+  return present.length > 0 ? present.reduce((sum, value) => sum + value, 0) : undefined;
 }
 
 interface OffProduct {
@@ -73,8 +112,32 @@ function normalizeFoodItem(product: OffProduct, fallbackId: string): FoodItem {
     micronutrientsPerServing: {
       fiber: nutriments.fiber_100g ?? 0,
       sugar: nutriments.sugars_100g ?? 0,
+      saturatedFat: nutriments['saturated-fat_100g'],
+      unsaturatedFat: sumOptional(nutriments['monounsaturated-fat_100g'], nutriments['polyunsaturated-fat_100g']),
+      cholesterol: gramsToMg(nutriments.cholesterol_100g),
       sodium: (nutriments.sodium_100g ?? 0) * 1000,
+      potassium: gramsToMg(nutriments.potassium_100g),
+      calcium: gramsToMg(nutriments.calcium_100g),
+      iron: gramsToMg(nutriments.iron_100g),
+      magnesium: gramsToMg(nutriments.magnesium_100g),
+      zinc: gramsToMg(nutriments.zinc_100g),
+      copper: gramsToMg(nutriments.copper_100g),
+      manganese: gramsToMg(nutriments.manganese_100g),
+      selenium: gramsToMcg(nutriments.selenium_100g),
+      iodine: gramsToMcg(nutriments.iodine_100g),
+      vitaminA: gramsToMcg(nutriments['vitamin-a_100g']),
+      vitaminB1: gramsToMg(nutriments['vitamin-b1_100g']),
+      vitaminB2: gramsToMg(nutriments['vitamin-b2_100g']),
+      vitaminB3: gramsToMg(nutriments['vitamin-pp_100g']),
+      vitaminB5: gramsToMg(nutriments['pantothenic-acid_100g']),
+      vitaminB6: gramsToMg(nutriments['vitamin-b6_100g']),
+      vitaminB7: gramsToMcg(nutriments.biotin_100g),
+      vitaminB9: gramsToMcg(nutriments['vitamin-b9_100g']),
+      vitaminB12: gramsToMcg(nutriments['vitamin-b12_100g']),
       vitaminC: (nutriments['vitamin-c_100g'] ?? 0) * 1000,
+      vitaminD: gramsToMcg(nutriments['vitamin-d_100g']),
+      vitaminE: gramsToMg(nutriments['vitamin-e_100g']),
+      vitaminK: gramsToMcg(nutriments['vitamin-k_100g']),
     },
     servingSize: 100,
     servingUnit: 'g',

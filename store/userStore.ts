@@ -151,12 +151,19 @@ export const useUserStore = create<UserState>()(
     {
       name: 'coach-imi-user-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 3,
+      version: 4,
       migrate: (persistedState, version) => {
         const state = persistedState as UserState;
         return {
           ...state,
-          user: { ...defaultUser, ...state?.user, visibleNutrients: state?.user?.visibleNutrients ?? DEFAULT_VISIBLE_NUTRIENTS },
+          user: {
+            ...defaultUser,
+            ...state?.user,
+            // Merge (not replace): a persisted visibleNutrients from before this
+            // nutrient list grew only has the old keys, so newly added nutrients
+            // need their default (hidden) rather than being left undefined.
+            visibleNutrients: { ...DEFAULT_VISIBLE_NUTRIENTS, ...state?.user?.visibleNutrients },
+          },
           // Users persisted before onboarding existed already have a profile, so don't force them through it.
           hasOnboarded: version >= 3 ? (state?.hasOnboarded ?? false) : true,
         };

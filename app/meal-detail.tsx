@@ -3,9 +3,11 @@ import { Camera, Plus, Trash2, X } from 'lucide-react-native';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { NUTRIENT_META, NUTRIENT_ORDER, sumEntryNutrients } from '@/components/features/nutrientMeta';
 import { Button } from '@/components/ui/Button';
 import { useDiaryStore, todayKey } from '@/store/diaryStore';
-import type { MealEntry, MealType } from '@/types';
+import { useUserStore } from '@/store/userStore';
+import type { MealEntry, MealType, NutrientKey } from '@/types';
 
 const MEAL_LABELS: Record<MealType, string> = {
   breakfast: 'Frühstück',
@@ -29,6 +31,22 @@ function formatAmount(entry: MealEntry): string {
   return `${count} ${foodItem.servingUnit}`;
 }
 
+function NutrientStat({ nutrientKey, value }: { nutrientKey: NutrientKey; value: number }) {
+  const { label, unit, color, Icon } = NUTRIENT_META[nutrientKey];
+  return (
+    <View className="basis-[30%] items-center gap-1 rounded-2xl bg-slate-100/70 py-3 dark:bg-white/5">
+      <Icon color={color} size={16} />
+      <Text className="text-sm font-bold text-slate-900 dark:text-white">
+        {Math.round(value)}
+        {unit}
+      </Text>
+      <Text className="text-[10px] text-slate-400" numberOfLines={1}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 export default function MealDetailScreen() {
   const params = useLocalSearchParams<{ mealType: MealType }>();
   const mealType = params.mealType ?? 'breakfast';
@@ -37,8 +55,11 @@ export default function MealDetailScreen() {
     (entry) => entry.mealType === mealType,
   );
   const removeEntry = useDiaryStore((state) => state.removeEntry);
+  const visibleNutrients = useUserStore((state) => state.user.visibleNutrients);
 
   const totalKcal = entries.reduce((sum, entry) => sum + entry.foodItem.caloriesPerServing * entry.servings, 0);
+  const nutrientAmounts = sumEntryNutrients(entries);
+  const visibleNutrientKeys = NUTRIENT_ORDER.filter((key) => visibleNutrients[key]);
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50 dark:bg-background-dark">
@@ -48,7 +69,7 @@ export default function MealDetailScreen() {
             {MEAL_LABELS[mealType]}
           </Text>
           <Text className="text-xs text-slate-400">
-            {entries.length > 0 ? `${Math.round(totalKcal)} kcal insgesamt` : 'Noch keine Einträge'}
+            {entries.length > 0 ? `${entries.length} ${entries.length === 1 ? 'Eintrag' : 'Einträge'}` : 'Noch keine Einträge'}
           </Text>
         </View>
         <Pressable
@@ -57,6 +78,20 @@ export default function MealDetailScreen() {
         >
           <X color="#64748b" size={18} />
         </Pressable>
+      </View>
+
+      <View className="mx-6 mt-4 gap-3 rounded-[28px] border border-slate-200/60 bg-white/70 p-4 shadow-md shadow-slate-900/5 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/60">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">{MEAL_LABELS[mealType]} gesamt</Text>
+          <Text className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">{Math.round(totalKcal)} kcal</Text>
+        </View>
+        {visibleNutrientKeys.length > 0 && (
+          <View className="flex-row flex-wrap gap-2">
+            {visibleNutrientKeys.map((key) => (
+              <NutrientStat key={key} nutrientKey={key} value={nutrientAmounts[key]} />
+            ))}
+          </View>
+        )}
       </View>
 
       <ScrollView className="flex-1 px-6 pt-4" contentContainerClassName="gap-2 pb-6">

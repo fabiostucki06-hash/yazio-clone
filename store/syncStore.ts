@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import { create } from 'zustand';
 
 import { supabase } from '@/lib/supabase';
-import { applySnapshot, pullSnapshot, pushSnapshot } from '@/services/cloudSync';
+import { applySnapshot, getLocalChangeTimestamp, pullSnapshot, pushSnapshot, recordLocalChange, shouldApplyRemote } from '@/services/cloudSync';
 import { useDiaryStore } from '@/store/diaryStore';
 import { useUserStore } from '@/store/userStore';
 
@@ -54,18 +54,26 @@ async function withFriendlyAuthErrors<T>(action: () => Promise<T>): Promise<T> {
 }
 
 function scheduleAutoSync() {
-  if (applyingRemote) return;
   if (autoSyncTimer) clearTimeout(autoSyncTimer);
   autoSyncTimer = setTimeout(() => {
     useSyncStore.getState().syncNow();
   }, 200);
 }
 
+function handleLocalStoreChange() {
+  // Changes applied by applySnapshot() itself must not be recorded as a
+  // "local edit" — otherwise the very next reload would treat the remote
+  // data we just pulled as stale and refuse to apply it again.
+  if (applyingRemote) return;
+  recordLocalChange();
+  scheduleAutoSync();
+}
+
 function startAutoSyncWatchers() {
   stopAutoSyncWatchers();
   unsubscribers = [
-    useUserStore.subscribe(scheduleAutoSync),
-    useDiaryStore.subscribe(scheduleAutoSync),
+    useUserStore.subscribe(handleLocalStoreChange),
+    useDiaryStore.subscribe(handleLocalStoreChange),
   ];
 }
 
@@ -85,15 +93,17 @@ async function afterSessionEstablished(session: Session) {
   startAutoSyncWatchers();
   try {
     const remote = await pullSnapshot(session.user.id);
-    if (remote) {
+    const localChangedAt = await getLocalChangeTimestamp();
+    const shouldApply = remote != null && shouldApplyRemote(remote.updatedAt, localChangedAt);
+    if (shouldApply) {
       applyingRemote = true;
-      applySnapshot(remote);
+      applySnapshot(remote.snapshot);
       applyingRemote = false;
     }
-    // No remote row yet: leave local state untouched instead of pushing it as the
-    // account's canonical data — that would seed placeholder defaults into the cloud
-    // before the user has actually filled in their profile.
-    useSyncStore.setState({ status: 'synced', lastSyncedAt: remote ? new Date().toISOString() : null, error: null });
+    // No remote row yet, or the remote row is older than an unsynced local
+    // edit: leave local state untouched rather than overwrite it with stale
+    // or placeholder data — see shouldApplyRemote.
+    useSyncStore.setState({ status: 'synced', lastSyncedAt: shouldApply ? new Date().toISOString() : null, error: null });
   } catch (err) {
     applyingRemote = false;
     useSyncStore.setState({ status: 'error', error: describeSyncError(err) });

@@ -106,13 +106,17 @@ export default function OnboardingScreen() {
     }
   }
 
-  function handleFinish() {
+  async function handleFinish() {
     if (!isBodyValid) return;
     completeOnboarding(trimmedName, trimmedEmail);
     updateProfile({ age: parsedAge, gender, heightCm: parsedHeight, weightKg: parsedWeight, activityLevel, goal });
 
+    // Give the push a real chance to land before navigating away — local state is
+    // already safely persisted either way (see shouldApplyRemote), but this closes
+    // most of the window where a refresh right after onboarding could still result
+    // in an empty remote row.
     const session = useSyncStore.getState().session;
-    if (session) pushSnapshot(session.user.id).catch(() => {});
+    if (session) await pushSnapshot(session.user.id).catch(() => {});
 
     router.replace('/(tabs)');
   }

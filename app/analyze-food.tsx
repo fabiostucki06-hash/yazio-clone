@@ -12,6 +12,7 @@ import { TextField } from '@/components/ui/TextField';
 import { analyzeFoodPhoto, type DetectedFoodItem, type VisionAnalysisResult } from '@/services/visionFoodApi';
 import { useDiaryStore } from '@/store/diaryStore';
 import { useUiStore } from '@/store/uiStore';
+import { useUserStore } from '@/store/userStore';
 import type { FoodItem, MealType, Micronutrients } from '@/types';
 
 const MEAL_LABELS: Record<MealType, string> = {
@@ -105,6 +106,7 @@ export default function AnalyzeFoodScreen() {
   const mealType = params.mealType ?? 'breakfast';
   const addEntry = useDiaryStore((state) => state.addEntry);
   const selectedDate = useUiStore((state) => state.selectedDate);
+  const visibleNutrients = useUserStore((state) => state.user.visibleNutrients);
 
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -438,18 +440,24 @@ export default function AnalyzeFoodScreen() {
                     {Math.round(grandTotal.kcal)} kcal
                   </Text>
                 </View>
-                <View className="flex-row items-center justify-between">
-                  <Text className="text-sm text-slate-600 dark:text-slate-300">Kohlenhydrate</Text>
-                  <Text className="text-sm text-slate-900 dark:text-white">{Math.round(grandTotal.carbs)} g</Text>
-                </View>
-                <View className="flex-row items-center justify-between">
-                  <Text className="text-sm text-slate-600 dark:text-slate-300">Eiweiß</Text>
-                  <Text className="text-sm text-slate-900 dark:text-white">{Math.round(grandTotal.protein)} g</Text>
-                </View>
-                <View className="flex-row items-center justify-between">
-                  <Text className="text-sm text-slate-600 dark:text-slate-300">Fett</Text>
-                  <Text className="text-sm text-slate-900 dark:text-white">{Math.round(grandTotal.fat)} g</Text>
-                </View>
+                {visibleNutrients.carbs && (
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-sm text-slate-600 dark:text-slate-300">Kohlenhydrate</Text>
+                    <Text className="text-sm text-slate-900 dark:text-white">{Math.round(grandTotal.carbs)} g</Text>
+                  </View>
+                )}
+                {visibleNutrients.protein && (
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-sm text-slate-600 dark:text-slate-300">Eiweiß</Text>
+                    <Text className="text-sm text-slate-900 dark:text-white">{Math.round(grandTotal.protein)} g</Text>
+                  </View>
+                )}
+                {visibleNutrients.fat && (
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-sm text-slate-600 dark:text-slate-300">Fett</Text>
+                    <Text className="text-sm text-slate-900 dark:text-white">{Math.round(grandTotal.fat)} g</Text>
+                  </View>
+                )}
               </Card>
             )}
 

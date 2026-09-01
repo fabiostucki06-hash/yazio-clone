@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/TextField';
 import { useDiaryStore } from '@/store/diaryStore';
 import { useUiStore } from '@/store/uiStore';
+import { useUserStore } from '@/store/userStore';
 import type { MealType } from '@/types';
 
 const MEAL_LABELS: Record<MealType, string> = {
@@ -25,6 +26,7 @@ export default function LogQuantityScreen() {
   const clearPendingSelection = useUiStore((state) => state.clearPendingSelection);
   const selectedDate = useUiStore((state) => state.selectedDate);
   const addEntry = useDiaryStore((state) => state.addEntry);
+  const visibleNutrients = useUserStore((state) => state.user.visibleNutrients);
 
   const isGramBased = foodItem?.servingUnit === 'g';
   const [amount, setAmount] = useState(isGramBased ? String(foodItem?.servingSize ?? 100) : '1');
@@ -106,18 +108,24 @@ export default function LogQuantityScreen() {
               {Math.round(computed.kcal)} kcal
             </Text>
           </View>
-          <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-slate-600 dark:text-slate-300">Kohlenhydrate</Text>
-            <Text className="text-sm text-slate-900 dark:text-white">{Math.round(computed.carbs)} g</Text>
-          </View>
-          <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-slate-600 dark:text-slate-300">Eiweiß</Text>
-            <Text className="text-sm text-slate-900 dark:text-white">{Math.round(computed.protein)} g</Text>
-          </View>
-          <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-slate-600 dark:text-slate-300">Fett</Text>
-            <Text className="text-sm text-slate-900 dark:text-white">{Math.round(computed.fat)} g</Text>
-          </View>
+          {visibleNutrients.carbs && (
+            <View className="flex-row items-center justify-between">
+              <Text className="text-sm text-slate-600 dark:text-slate-300">Kohlenhydrate</Text>
+              <Text className="text-sm text-slate-900 dark:text-white">{Math.round(computed.carbs)} g</Text>
+            </View>
+          )}
+          {visibleNutrients.protein && (
+            <View className="flex-row items-center justify-between">
+              <Text className="text-sm text-slate-600 dark:text-slate-300">Eiweiß</Text>
+              <Text className="text-sm text-slate-900 dark:text-white">{Math.round(computed.protein)} g</Text>
+            </View>
+          )}
+          {visibleNutrients.fat && (
+            <View className="flex-row items-center justify-between">
+              <Text className="text-sm text-slate-600 dark:text-slate-300">Fett</Text>
+              <Text className="text-sm text-slate-900 dark:text-white">{Math.round(computed.fat)} g</Text>
+            </View>
+          )}
         </Card>
 
         <Button label="Bestätigen" onPress={handleAdd} disabled={servings <= 0} />

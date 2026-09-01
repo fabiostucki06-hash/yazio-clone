@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { create } from 'zustand';
 
 import { supabase } from '@/lib/supabase';
@@ -181,6 +181,18 @@ export const useSyncStore = create<SyncState>((set, get) => ({
         supabase.auth.stopAutoRefresh();
       }
     });
+
+    // AppState/visibilitychange alone misses one desktop case: switching
+    // between two already-visible windows (multi-monitor, side-by-side)
+    // never hides either tab, so visibilityState stays 'visible' and no
+    // 'change' event fires — only a real focus/blur does. Cover that gap
+    // explicitly on web, same pattern as hooks/useAutoUpdate.ts.
+    if (Platform.OS === 'web') {
+      window.addEventListener('focus', () => {
+        const { session } = get();
+        if (session) pullAndApply(session);
+      });
+    }
   },
 
   signUp: async (email, password) =>

@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
-import { Camera, Coffee, Cookie, GlassWater, Moon, Plus, UtensilsCrossed } from 'lucide-react-native';
+import { Camera, Coffee, Cookie, GlassWater, Moon, Plus, RefreshCw, UtensilsCrossed } from 'lucide-react-native';
 import type { ComponentType } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AiRecommendationCard } from '@/components/features/AiRecommendationCard';
@@ -11,6 +11,7 @@ import { HardRefreshButton } from '@/components/ui/HardRefreshButton';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useDiaryStore } from '@/store/diaryStore';
+import { useSyncStore } from '@/store/syncStore';
 import { useUiStore } from '@/store/uiStore';
 import { useUserStore } from '@/store/userStore';
 import type { Macros, MealEntry, MealType, NutrientKey } from '@/types';
@@ -36,6 +37,10 @@ const ACCENT = '#10b981';
 const RING_SIZE = 176;
 const RING_STROKE = 16;
 const EMPTY_ENTRIES: MealEntry[] = [];
+
+function formatSyncTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
 
 function NutrientTile({ nutrientKey, amount, goal }: { nutrientKey: NutrientKey; amount: number; goal: number }) {
   const { label, unit, color, Icon } = NUTRIENT_META[nutrientKey];
@@ -117,6 +122,12 @@ export default function DiaryScreen() {
   const date = useUiStore((state) => state.selectedDate);
   const entries = useDiaryStore((state) => state.entriesByDate[date] ?? EMPTY_ENTRIES);
   const user = useUserStore((state) => state.user);
+  const session = useSyncStore((state) => state.session);
+  const syncStatus = useSyncStore((state) => state.status);
+  const remoteUpdatedAt = useSyncStore((state) => state.remoteUpdatedAt);
+  const lastSyncedAt = useSyncStore((state) => state.lastSyncedAt);
+  const syncNow = useSyncStore((state) => state.syncNow);
+  const syncedAt = remoteUpdatedAt ?? lastSyncedAt;
 
   const selectedDateLabel = new Date(`${date}T00:00:00Z`).toLocaleDateString('de-DE', {
     weekday: 'long',
@@ -157,6 +168,24 @@ export default function DiaryScreen() {
             <Text className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Coach imi</Text>
             <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Tagebuch</Text>
             <Text className="text-sm text-slate-500 dark:text-slate-400">{selectedDateLabel}</Text>
+            {session && (
+              <Pressable
+                onPress={() => syncNow()}
+                disabled={syncStatus === 'syncing'}
+                className="mt-1 flex-row items-center gap-1.5 active:opacity-70"
+                accessibilityRole="button"
+                accessibilityLabel="Jetzt synchronisieren"
+              >
+                {syncStatus === 'syncing' ? (
+                  <ActivityIndicator size="small" color="#10b981" />
+                ) : (
+                  <RefreshCw color="#94a3b8" size={11} />
+                )}
+                <Text className="text-xs text-slate-400">
+                  Zuletzt synchronisiert: {syncedAt ? formatSyncTime(syncedAt) : '–'}
+                </Text>
+              </Pressable>
+            )}
           </View>
           <View className="flex-row items-center gap-2">
             <HardRefreshButton />

@@ -7,6 +7,29 @@ import { useUserStore } from '@/store/userStore';
 import type { MealEntry, User, WeightEntry } from '@/types';
 
 const LOCAL_CHANGE_KEY = 'coach-imi-last-local-change';
+const SYNC_TIMEOUT_MS = 10000;
+
+// Supabase-js doesn't impose a timeout on its own — a hung connection would
+// otherwise leave a push/pull promise unsettled forever, which would in turn
+// leave the sync store's status stuck on 'syncing' indefinitely with no error
+// ever surfacing (the "sync worked once, then locked up" symptom). Race
+// against a timer so the call is always guaranteed to settle one way or the
+// other.
+function withTimeout<T>(promise: PromiseLike<T>, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label}: Zeitüberschreitung.`)), SYNC_TIMEOUT_MS);
+    Promise.resolve(promise).then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
 
 // Tracks when local state last changed, independent of whether the debounced
 // push to Supabase has actually landed yet. Used to make sure a reload can
@@ -69,9 +92,10 @@ let lastPushedUpdatedAt: string | null = null;
 export async function pushSnapshot(userId: string): Promise<string> {
   const snapshot = buildSnapshot();
   const updatedAt = new Date().toISOString();
-  const { error } = await supabase
-    .from('user_data')
-    .upsert({ user_id: userId, data: snapshot, updated_at: updatedAt });
+  const { error } = await withTimeout(
+    supabase.from('user_data').upsert({ user_id: userId, data: snapshot, updated_at: updatedAt }),
+    'Sync-Push',
+  );
   if (error) {
     console.error('[Sync] Error:', error);
     throw error;
@@ -86,12 +110,14 @@ export interface RemoteSnapshot {
 }
 
 export async function pullSnapshot(userId: string): Promise<RemoteSnapshot | null> {
-  const { data, error } = await supabase
-    .from('user_data')
-    .select('data, updated_at')
-    .eq('user_id', userId)
-    .maybeSingle();
-  if (error) throw error;
+  const { data, error } = await withTimeout(
+    supabase.from('user_data').select('data, updated_at').eq('user_id', userId).maybeSingle(),
+    'Sync-Pull',
+  );
+  if (error) {
+    console.error('[Sync] Error:', error);
+    throw error;
+  }
   if (!data?.data) return null;
   return { snapshot: data.data as CloudSnapshot, updatedAt: (data.updated_at as string | undefined) ?? null };
 }

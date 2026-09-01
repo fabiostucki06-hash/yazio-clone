@@ -72,7 +72,10 @@ export async function pushSnapshot(userId: string): Promise<void> {
   const { error } = await supabase
     .from('user_data')
     .upsert({ user_id: userId, data: snapshot, updated_at: updatedAt });
-  if (error) throw error;
+  if (error) {
+    console.error('[Sync] Error:', error);
+    throw error;
+  }
   lastPushedUpdatedAt = updatedAt;
 }
 

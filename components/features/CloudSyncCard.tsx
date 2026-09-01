@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { useSyncStore } from '@/store/syncStore';
 
 function formatSyncedAt(iso: string): string {
-  return new Date(iso).toLocaleString('de-CH', { dateStyle: 'medium', timeStyle: 'short' });
+  return new Date(iso).toLocaleString('de-CH', { dateStyle: 'medium', timeStyle: 'medium' });
 }
 
 export function CloudSyncCard() {
@@ -14,6 +14,7 @@ export function CloudSyncCard() {
   const status = useSyncStore((state) => state.status);
   const error = useSyncStore((state) => state.error);
   const lastSyncedAt = useSyncStore((state) => state.lastSyncedAt);
+  const remoteUpdatedAt = useSyncStore((state) => state.remoteUpdatedAt);
   const signOut = useSyncStore((state) => state.signOut);
   const syncNow = useSyncStore((state) => state.syncNow);
   const pullNow = useSyncStore((state) => state.pullNow);
@@ -42,9 +43,11 @@ export function CloudSyncCard() {
           </View>
           <View>
             <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Cloud-Sync</Text>
-            {status === 'synced' && lastSyncedAt && (
+            {status === 'synced' && (remoteUpdatedAt || lastSyncedAt) && (
               <View className="flex-row items-center gap-1.5">
-                <Text className="text-xs text-slate-400">Zuletzt synchronisiert: {formatSyncedAt(lastSyncedAt)}</Text>
+                <Text className="text-xs text-slate-400">
+                  Zuletzt synchronisiert: {formatSyncedAt(remoteUpdatedAt ?? lastSyncedAt!)}
+                </Text>
                 <Pressable
                   onPress={() => pullNow()}
                   accessibilityRole="button"

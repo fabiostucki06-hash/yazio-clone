@@ -23,6 +23,7 @@ interface SyncState {
   status: SyncStatus;
   error: string | null;
   lastSyncedAt: string | null;
+  remoteUpdatedAt: string | null;
   init: () => void;
   signUp: (email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -38,7 +39,7 @@ let unsubscribers: (() => void)[] = [];
 let lastHandledAccessToken: string | null = null;
 
 function describeSyncError(err: unknown): string {
-  console.error('[sync]', err);
+  console.error('[Sync] Error:', err);
   if (err && typeof err === 'object') {
     const { hint, message, details } = err as { hint?: string; message?: string; details?: string };
     return hint || message || details || 'Sync fehlgeschlagen';
@@ -114,22 +115,9 @@ function stopAutoSyncWatchers() {
 async function pullAndApply(session: Session): Promise<void> {
   try {
     const remote = await pullSnapshot(session.user.id);
+    console.log('[Sync] Remote payload fetched:', remote);
     const localChangedAt = await getLocalChangeTimestamp();
     const shouldApply = remote != null && shouldApplyRemote(remote.updatedAt, localChangedAt);
-    if (__DEV__) {
-      console.log(
-        'Fetching diary for user:',
-        session.user.id,
-        'remote updatedAt:',
-        remote?.updatedAt ?? null,
-        'local changed at:',
-        localChangedAt,
-        'applying:',
-        shouldApply,
-        'entry dates:',
-        remote ? Object.keys(remote.snapshot.entriesByDate ?? {}) : [],
-      );
-    }
     if (shouldApply) {
       applyingRemote = true;
       applySnapshot(remote.snapshot);
@@ -140,7 +128,12 @@ async function pullAndApply(session: Session): Promise<void> {
     // or placeholder data — see shouldApplyRemote. lastSyncedAt still
     // updates either way: it means "sync last successfully checked in",
     // not "local data last changed", so a no-op check still counts.
-    useSyncStore.setState({ status: 'synced', lastSyncedAt: new Date().toISOString(), error: null });
+    useSyncStore.setState({
+      status: 'synced',
+      lastSyncedAt: new Date().toISOString(),
+      remoteUpdatedAt: remote?.updatedAt ?? useSyncStore.getState().remoteUpdatedAt,
+      error: null,
+    });
   } catch (err) {
     applyingRemote = false;
     useSyncStore.setState({ status: 'error', error: describeSyncError(err) });
@@ -151,8 +144,17 @@ async function afterSessionEstablished(session: Session) {
   if (session.access_token === lastHandledAccessToken) return;
   lastHandledAccessToken = session.access_token;
 
-  startAutoSyncWatchers(session);
+  // Pull-then-subscribe, never the other way round: the local stores' persist
+  // middleware rehydrates from AsyncStorage asynchronously, on its own timer,
+  // independent of this function. If the change-watchers below were armed
+  // first, a rehydration landing while the remote fetch was still in flight
+  // would fire handleLocalStoreChange and auto-push that (possibly stale,
+  // pre-this-session) hydrated state to Supabase before it was ever compared
+  // against the remote row - i.e. exactly the "device overwrites remote with
+  // stale local state on load" bug. Subscribing only after the initial
+  // fetch-and-compare has finished closes that window entirely.
   await pullAndApply(session);
+  startAutoSyncWatchers(session);
 }
 
 export const useSyncStore = create<SyncState>((set, get) => ({
@@ -161,6 +163,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   status: 'offline',
   error: null,
   lastSyncedAt: null,
+  remoteUpdatedAt: null,
 
   init: () => {
     if (hasInitialized) return;
@@ -178,7 +181,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
         }
       } else {
         stopAutoSyncWatchers();
-        set({ status: 'offline', lastSyncedAt: null, error: null });
+        set({ status: 'offline', lastSyncedAt: null, remoteUpdatedAt: null, error: null });
       }
     });
 
@@ -243,7 +246,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   signOut: async () => {
     stopAutoSyncWatchers();
     await supabase.auth.signOut();
-    set({ status: 'offline', lastSyncedAt: null, error: null });
+    set({ status: 'offline', lastSyncedAt: null, remoteUpdatedAt: null, error: null });
   },
 
   syncNow: async () => {
@@ -267,12 +270,18 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     set({ status: 'syncing', error: null });
     try {
       const remote = await pullSnapshot(session.user.id);
+      console.log('[Sync] Remote payload fetched:', remote);
       if (remote) {
         applyingRemote = true;
         applySnapshot(remote.snapshot);
         applyingRemote = false;
       }
-      set({ status: 'synced', lastSyncedAt: new Date().toISOString(), error: null });
+      set({
+        status: 'synced',
+        lastSyncedAt: new Date().toISOString(),
+        remoteUpdatedAt: remote?.updatedAt ?? get().remoteUpdatedAt,
+        error: null,
+      });
     } catch (err) {
       applyingRemote = false;
       set({ status: 'error', error: describeSyncError(err) });

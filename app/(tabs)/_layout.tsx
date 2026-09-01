@@ -39,7 +39,7 @@ function DesktopSidebar() {
   const pathname = usePathname();
 
   return (
-    <View className="w-64 shrink-0 gap-1 border-r border-slate-200/60 bg-white/70 p-4 dark:border-slate-800/60 dark:bg-slate-900/70">
+    <View className="w-64 shrink-0 gap-1 border-r border-white/40 bg-white/60 p-4 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/60 dark:shadow-black/40">
       <View className="mb-4 flex-row items-center gap-2.5 px-2 pt-1">
         <View className="h-9 w-9 items-center justify-center rounded-2xl bg-emerald-500 shadow-md shadow-emerald-500/25">
           <Sparkles color="#ffffff" size={16} />

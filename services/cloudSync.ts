@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 import { supabase } from '@/lib/supabase';
 import { useDiaryStore } from '@/store/diaryStore';
@@ -60,12 +61,19 @@ export function applySnapshot(snapshot: CloudSnapshot): void {
   });
 }
 
+// Set on every push and checked by the realtime handler so a device doesn't
+// treat its own write echoing back through `postgres_changes` as a remote
+// change and redundantly re-apply/re-fetch its own just-pushed data.
+let lastPushedUpdatedAt: string | null = null;
+
 export async function pushSnapshot(userId: string): Promise<void> {
   const snapshot = buildSnapshot();
+  const updatedAt = new Date().toISOString();
   const { error } = await supabase
     .from('user_data')
-    .upsert({ user_id: userId, data: snapshot, updated_at: new Date().toISOString() });
+    .upsert({ user_id: userId, data: snapshot, updated_at: updatedAt });
   if (error) throw error;
+  lastPushedUpdatedAt = updatedAt;
 }
 
 export interface RemoteSnapshot {
@@ -82,4 +90,27 @@ export async function pullSnapshot(userId: string): Promise<RemoteSnapshot | nul
   if (error) throw error;
   if (!data?.data) return null;
   return { snapshot: data.data as CloudSnapshot, updatedAt: (data.updated_at as string | undefined) ?? null };
+}
+
+// Listens for another device/session pushing a new snapshot for this user
+// (requires `user_data` to be added to the `supabase_realtime` publication —
+// see supabase/schema.sql) and calls back with its updated_at, unless it's
+// just this device's own write echoing back. Returns an unsubscribe fn.
+export function subscribeToRemoteChanges(userId: string, onRemoteChange: (updatedAt: string | null) => void): () => void {
+  const channel: RealtimeChannel = supabase
+    .channel(`user_data:${userId}`)
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'user_data', filter: `user_id=eq.${userId}` },
+      (payload) => {
+        const updatedAt = (payload.new as { updated_at?: string } | null)?.updated_at ?? null;
+        if (updatedAt && updatedAt === lastPushedUpdatedAt) return;
+        onRemoteChange(updatedAt);
+      },
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }

@@ -1,8 +1,17 @@
 import type { Session } from '@supabase/supabase-js';
+import { AppState } from 'react-native';
 import { create } from 'zustand';
 
 import { supabase } from '@/lib/supabase';
-import { applySnapshot, getLocalChangeTimestamp, pullSnapshot, pushSnapshot, recordLocalChange, shouldApplyRemote } from '@/services/cloudSync';
+import {
+  applySnapshot,
+  getLocalChangeTimestamp,
+  pullSnapshot,
+  pushSnapshot,
+  recordLocalChange,
+  shouldApplyRemote,
+  subscribeToRemoteChanges,
+} from '@/services/cloudSync';
 import { useDiaryStore } from '@/store/diaryStore';
 import { useUserStore } from '@/store/userStore';
 
@@ -69,11 +78,15 @@ function handleLocalStoreChange() {
   scheduleAutoSync();
 }
 
-function startAutoSyncWatchers() {
+function startAutoSyncWatchers(session: Session) {
   stopAutoSyncWatchers();
+  const unsubscribeRemote = subscribeToRemoteChanges(session.user.id, () => {
+    pullAndApply(session);
+  });
   unsubscribers = [
     useUserStore.subscribe(handleLocalStoreChange),
     useDiaryStore.subscribe(handleLocalStoreChange),
+    unsubscribeRemote,
   ];
 }
 
@@ -86,11 +99,12 @@ function stopAutoSyncWatchers() {
   }
 }
 
-async function afterSessionEstablished(session: Session) {
-  if (session.access_token === lastHandledAccessToken) return;
-  lastHandledAccessToken = session.access_token;
-
-  startAutoSyncWatchers();
+// Pulls the latest remote snapshot and applies it if newer than the last
+// local edit. Shared by the initial sign-in pull, the realtime listener (a
+// change lands from another device while this one is open), and the
+// app-foreground refresh (this device was backgrounded/asleep and missed
+// the realtime event entirely).
+async function pullAndApply(session: Session): Promise<void> {
   try {
     const remote = await pullSnapshot(session.user.id);
     const localChangedAt = await getLocalChangeTimestamp();
@@ -108,6 +122,14 @@ async function afterSessionEstablished(session: Session) {
     applyingRemote = false;
     useSyncStore.setState({ status: 'error', error: describeSyncError(err) });
   }
+}
+
+async function afterSessionEstablished(session: Session) {
+  if (session.access_token === lastHandledAccessToken) return;
+  lastHandledAccessToken = session.access_token;
+
+  startAutoSyncWatchers(session);
+  await pullAndApply(session);
 }
 
 export const useSyncStore = create<SyncState>((set, get) => ({
@@ -134,6 +156,23 @@ export const useSyncStore = create<SyncState>((set, get) => ({
       } else {
         stopAutoSyncWatchers();
         set({ status: 'offline', lastSyncedAt: null, error: null });
+      }
+    });
+
+    // supabase-js's token auto-refresh runs on a JS timer, which browsers and
+    // iOS throttle/suspend once the tab or PWA is backgrounded — a session
+    // can sit with an expired JWT until something restarts the timer. Per
+    // Supabase's own guidance, drive it off app foreground/background
+    // instead of leaving it always-on: stop it while backgrounded, and on
+    // return to foreground restart it *and* re-pull, since a realtime event
+    // that fired while this device was asleep would have been missed.
+    AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        supabase.auth.startAutoRefresh();
+        const { session } = get();
+        if (session) pullAndApply(session);
+      } else {
+        supabase.auth.stopAutoRefresh();
       }
     });
   },

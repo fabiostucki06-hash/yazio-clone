@@ -21,3 +21,7 @@ create policy "Users can update their own data"
   on public.user_data for update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- Required for cross-device sync: without this, other signed-in devices
+-- never hear about a row change and only catch up on their next app launch.
+alter publication supabase_realtime add table public.user_data;

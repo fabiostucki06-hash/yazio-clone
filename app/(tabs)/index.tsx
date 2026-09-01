@@ -204,7 +204,7 @@ export default function DiaryScreen() {
       </ScrollView>
 
       <Text className="absolute bottom-24 left-4 rounded-md bg-slate-50/90 px-1.5 py-0.5 text-[10px] text-slate-400 dark:bg-background-dark/90 lg:bottom-6">
-        Zuletzt aktualisiert: {getLastUpdatedLabel()} Uhr
+        App-Build: {getLastUpdatedLabel()} Uhr
       </Text>
     </SafeAreaView>
   );

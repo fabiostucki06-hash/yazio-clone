@@ -121,9 +121,11 @@ async function pullAndApply(session: Session): Promise<void> {
       applyingRemote = false;
     }
     // No remote row yet, or the remote row is older than an unsynced local
-    // edit: leave local state untouched rather than overwrite it with stale
-    // or placeholder data — see shouldApplyRemote.
-    useSyncStore.setState({ status: 'synced', lastSyncedAt: shouldApply ? new Date().toISOString() : null, error: null });
+    // edit: leave local STATE untouched rather than overwrite it with stale
+    // or placeholder data — see shouldApplyRemote. lastSyncedAt still
+    // updates either way: it means "sync last successfully checked in",
+    // not "local data last changed", so a no-op check still counts.
+    useSyncStore.setState({ status: 'synced', lastSyncedAt: new Date().toISOString(), error: null });
   } catch (err) {
     applyingRemote = false;
     useSyncStore.setState({ status: 'error', error: describeSyncError(err) });

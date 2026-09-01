@@ -5,10 +5,15 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { useSyncStore } from '@/store/syncStore';
 
+function formatSyncedAt(iso: string): string {
+  return new Date(iso).toLocaleString('de-CH', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
 export function CloudSyncCard() {
   const session = useSyncStore((state) => state.session);
   const status = useSyncStore((state) => state.status);
   const error = useSyncStore((state) => state.error);
+  const lastSyncedAt = useSyncStore((state) => state.lastSyncedAt);
   const signOut = useSyncStore((state) => state.signOut);
   const syncNow = useSyncStore((state) => state.syncNow);
 
@@ -34,7 +39,12 @@ export function CloudSyncCard() {
               <Cloud color="#64748b" size={18} />
             )}
           </View>
-          <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Cloud-Sync</Text>
+          <View>
+            <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Cloud-Sync</Text>
+            {status === 'synced' && lastSyncedAt && (
+              <Text className="text-xs text-slate-400">Zuletzt synchronisiert: {formatSyncedAt(lastSyncedAt)}</Text>
+            )}
+          </View>
         </View>
 
         <Pressable

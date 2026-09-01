@@ -66,7 +66,7 @@ export function applySnapshot(snapshot: CloudSnapshot): void {
 // change and redundantly re-apply/re-fetch its own just-pushed data.
 let lastPushedUpdatedAt: string | null = null;
 
-export async function pushSnapshot(userId: string): Promise<void> {
+export async function pushSnapshot(userId: string): Promise<string> {
   const snapshot = buildSnapshot();
   const updatedAt = new Date().toISOString();
   const { error } = await supabase
@@ -77,6 +77,7 @@ export async function pushSnapshot(userId: string): Promise<void> {
     throw error;
   }
   lastPushedUpdatedAt = updatedAt;
+  return updatedAt;
 }
 
 export interface RemoteSnapshot {

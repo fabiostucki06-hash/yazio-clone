@@ -254,8 +254,8 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     if (!session) return;
     set({ status: 'syncing', error: null });
     try {
-      await pushSnapshot(session.user.id);
-      set({ status: 'synced', lastSyncedAt: new Date().toISOString() });
+      const updatedAt = await pushSnapshot(session.user.id);
+      set({ status: 'synced', lastSyncedAt: updatedAt, remoteUpdatedAt: updatedAt, error: null });
     } catch (err) {
       set({ status: 'error', error: describeSyncError(err) });
     }

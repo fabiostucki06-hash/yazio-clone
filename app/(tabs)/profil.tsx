@@ -179,7 +179,7 @@ export default function ProfilScreen() {
   const lastDate = weightHistory[weightHistory.length - 1]?.date;
 
   return (
-    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark lg:pl-64">
+    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
       <ScrollView
         className="flex-1"
         contentContainerClassName="gap-6 px-6 pt-4 pb-32 lg:mx-auto lg:w-full lg:max-w-2xl lg:px-10 lg:pb-12"

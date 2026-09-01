@@ -66,7 +66,7 @@ export default function StatistikScreen() {
   const weightChangeLabel = weightHistory.length >= 2 ? `${weightChange > 0 ? '+' : ''}${weightChange.toFixed(1)} kg` : '—';
 
   return (
-    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark lg:pl-64">
+    <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
       <View className="flex-1 gap-6 px-6 pt-4 pb-32 lg:px-10 lg:pb-12">
         <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Statistik</Text>
 

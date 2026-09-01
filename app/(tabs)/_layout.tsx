@@ -1,5 +1,5 @@
 import { BookOpen, ChartColumn, Sparkles, User } from 'lucide-react-native';
-import { Tabs } from 'expo-router';
+import { Link, Tabs, usePathname } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -10,6 +10,12 @@ const ACTIVE_COLOR = '#10b981';
 
 type TabBarRenderer = NonNullable<ComponentProps<typeof Tabs>['tabBar']>;
 type TabBarProps = Parameters<TabBarRenderer>[0];
+
+const SIDEBAR_LINKS = [
+  { href: '/', label: 'Tagebuch', Icon: BookOpen },
+  { href: '/statistik', label: 'Statistik', Icon: ChartColumn },
+  { href: '/profil', label: 'Profil', Icon: User },
+] as const;
 
 function TabIcon({ focused, children }: { focused: boolean; children: ReactNode }) {
   return (
@@ -23,9 +29,53 @@ function TabIcon({ focused, children }: { focused: boolean; children: ReactNode 
   );
 }
 
-function AppTabBar({ state, descriptors, navigation }: TabBarProps) {
+// Static sidebar rendered as a real flex sibling of the Tabs content (see
+// TabsLayout below), not as an overlay via the `tabBar` render prop — that
+// used to be `absolute`-positioned on top of the screen content and only
+// avoided covering it because each screen separately hardcoded a matching
+// `lg:pl-64` offset. The two numbers drifted (sidebar was `w-56`, padding
+// was `pl-64`) and any screen that forgot the padding got covered outright.
+function DesktopSidebar() {
+  const pathname = usePathname();
+
+  return (
+    <View className="w-64 shrink-0 gap-1 border-r border-slate-200/60 bg-white/70 p-4 dark:border-slate-800/60 dark:bg-slate-900/70">
+      <View className="mb-4 flex-row items-center gap-2.5 px-2 pt-1">
+        <View className="h-9 w-9 items-center justify-center rounded-2xl bg-emerald-500 shadow-md shadow-emerald-500/25">
+          <Sparkles color="#ffffff" size={16} />
+        </View>
+        <Text className="text-base font-bold tracking-tight text-slate-900 dark:text-white">Coach imi</Text>
+      </View>
+      {SIDEBAR_LINKS.map(({ href, label, Icon }) => {
+        const isFocused = pathname === href;
+        return (
+          <Link key={href} href={href} asChild>
+            <Pressable
+              className={`flex-row items-center gap-3 rounded-2xl px-4 py-3 transition-colors duration-150 ease-in-out ${
+                isFocused ? 'bg-emerald-500/10' : 'active:bg-slate-100/60 dark:active:bg-white/5'
+              }`}
+            >
+              <Icon color={isFocused ? ACTIVE_COLOR : '#94a3b8'} size={20} />
+              <Text
+                className={`text-sm font-semibold ${
+                  isFocused ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                {label}
+              </Text>
+            </Pressable>
+          </Link>
+        );
+      })}
+    </View>
+  );
+}
+
+// Bottom tab bar used on phones/tablets below the `lg` breakpoint. Its
+// `absolute` positioning is fine here — it's meant to float over scrollable
+// content, and every screen already reserves bottom padding (`pb-32`) for it.
+function MobileTabBar({ state, descriptors, navigation }: TabBarProps) {
   const colorScheme = useColorScheme();
-  const isDesktop = useIsDesktop();
   const isDark = colorScheme === 'dark';
   const inactiveColor = isDark ? '#64748b' : '#94a3b8';
 
@@ -34,7 +84,7 @@ function AppTabBar({ state, descriptors, navigation }: TabBarProps) {
     const isFocused = state.index === index;
     const label = typeof options.title === 'string' ? options.title : route.name;
     const color = isFocused ? ACTIVE_COLOR : inactiveColor;
-    const icon = options.tabBarIcon?.({ color, size: isDesktop ? 20 : 24, focused: isFocused });
+    const icon = options.tabBarIcon?.({ color, size: 24, focused: isFocused });
 
     function onPress() {
       const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -43,37 +93,6 @@ function AppTabBar({ state, descriptors, navigation }: TabBarProps) {
 
     return { key: route.key, label, isFocused, icon, onPress };
   });
-
-  if (isDesktop) {
-    return (
-      <View className="absolute bottom-4 left-4 top-4 w-56 justify-start gap-1 rounded-[28px] border border-slate-200/60 bg-white/70 p-4 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/70">
-        <View className="mb-4 flex-row items-center gap-2.5 px-2 pt-1">
-          <View className="h-9 w-9 items-center justify-center rounded-2xl bg-emerald-500 shadow-md shadow-emerald-500/25">
-            <Sparkles color="#ffffff" size={16} />
-          </View>
-          <Text className="text-base font-bold tracking-tight text-slate-900 dark:text-white">Coach imi</Text>
-        </View>
-        {items.map((item) => (
-          <Pressable
-            key={item.key}
-            onPress={item.onPress}
-            className={`flex-row items-center gap-3 rounded-2xl px-4 py-3 transition-colors duration-150 ease-in-out ${
-              item.isFocused ? 'bg-emerald-500/10' : 'active:bg-slate-100/60 dark:active:bg-white/5'
-            }`}
-          >
-            {item.icon}
-            <Text
-              className={`text-sm font-semibold ${
-                item.isFocused ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-300'
-              }`}
-            >
-              {item.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-    );
-  }
 
   return (
     <View className="absolute bottom-4 left-4 right-4">
@@ -104,8 +123,13 @@ function AppTabBar({ state, descriptors, navigation }: TabBarProps) {
 }
 
 export default function TabsLayout() {
-  return (
-    <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <AppTabBar {...props} />}>
+  const isDesktop = useIsDesktop();
+
+  const tabs = (
+    <Tabs
+      screenOptions={{ headerShown: false }}
+      tabBar={isDesktop ? () => null : (props) => <MobileTabBar {...props} />}
+    >
       <Tabs.Screen
         name="index"
         options={{
@@ -128,5 +152,14 @@ export default function TabsLayout() {
         }}
       />
     </Tabs>
+  );
+
+  if (!isDesktop) return tabs;
+
+  return (
+    <View className="flex-1 flex-row">
+      <DesktopSidebar />
+      <View className="flex-1 overflow-y-auto">{tabs}</View>
+    </View>
   );
 }

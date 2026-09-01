@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/TextField';
 import { analyzeFoodPhoto, type DetectedFoodItem, type VisionAnalysisResult } from '@/services/visionFoodApi';
-import { useDiaryStore, todayKey } from '@/store/diaryStore';
+import { useDiaryStore } from '@/store/diaryStore';
+import { useUiStore } from '@/store/uiStore';
 import type { FoodItem, MealType, Micronutrients } from '@/types';
 
 const MEAL_LABELS: Record<MealType, string> = {
@@ -103,6 +104,7 @@ export default function AnalyzeFoodScreen() {
   const params = useLocalSearchParams<{ mealType: MealType }>();
   const mealType = params.mealType ?? 'breakfast';
   const addEntry = useDiaryStore((state) => state.addEntry);
+  const selectedDate = useUiStore((state) => state.selectedDate);
 
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -248,7 +250,7 @@ export default function AnalyzeFoodScreen() {
         servingUnit: 'g',
       };
 
-      addEntry(todayKey(), foodItem, mealType, grams / 100);
+      addEntry(selectedDate, foodItem, mealType, grams / 100);
     }
 
     router.back();

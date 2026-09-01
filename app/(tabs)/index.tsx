@@ -5,11 +5,13 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AiRecommendationCard } from '@/components/features/AiRecommendationCard';
+import { DateSelector } from '@/components/features/DateSelector';
 import { NUTRIENT_META, NUTRIENT_ORDER, sumEntryNutrients } from '@/components/features/nutrientMeta';
 import { HardRefreshButton } from '@/components/ui/HardRefreshButton';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { useDiaryStore, todayKey } from '@/store/diaryStore';
+import { useDiaryStore } from '@/store/diaryStore';
+import { useUiStore } from '@/store/uiStore';
 import { useUserStore } from '@/store/userStore';
 import type { Macros, MealEntry, MealType, NutrientKey } from '@/types';
 import { getLastUpdatedLabel } from '@/utils/lastUpdated';
@@ -112,11 +114,11 @@ function MealCard({ mealType, entries }: { mealType: MealType; entries: MealEntr
 }
 
 export default function DiaryScreen() {
-  const date = todayKey();
+  const date = useUiStore((state) => state.selectedDate);
   const entries = useDiaryStore((state) => state.entriesByDate[date] ?? EMPTY_ENTRIES);
   const user = useUserStore((state) => state.user);
 
-  const today = new Date().toLocaleDateString('de-DE', {
+  const selectedDateLabel = new Date(`${date}T00:00:00Z`).toLocaleDateString('de-DE', {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
@@ -154,13 +156,15 @@ export default function DiaryScreen() {
           <View>
             <Text className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Coach imi</Text>
             <Text className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Tagebuch</Text>
-            <Text className="text-sm text-slate-500 dark:text-slate-400">{today}</Text>
+            <Text className="text-sm text-slate-500 dark:text-slate-400">{selectedDateLabel}</Text>
           </View>
           <View className="flex-row items-center gap-2">
             <HardRefreshButton />
             <ThemeToggle />
           </View>
         </View>
+
+        <DateSelector />
 
         <View className="gap-6 lg:flex-row lg:items-start">
           <View className="gap-6 lg:w-[380px] lg:shrink-0">

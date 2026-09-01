@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/TextField';
-import { useDiaryStore, todayKey } from '@/store/diaryStore';
+import { useDiaryStore } from '@/store/diaryStore';
 import { useUiStore } from '@/store/uiStore';
 import type { MealType } from '@/types';
 
@@ -23,6 +23,7 @@ export default function LogQuantityScreen() {
   const foodItem = useUiStore((state) => state.pendingFoodItem);
   const mealType = useUiStore((state) => state.pendingMealType);
   const clearPendingSelection = useUiStore((state) => state.clearPendingSelection);
+  const selectedDate = useUiStore((state) => state.selectedDate);
   const addEntry = useDiaryStore((state) => state.addEntry);
 
   const isGramBased = foodItem?.servingUnit === 'g';
@@ -53,7 +54,7 @@ export default function LogQuantityScreen() {
 
   function handleAdd() {
     if (!foodItem || servings <= 0) return;
-    addEntry(todayKey(), foodItem, mealType, servings);
+    addEntry(selectedDate, foodItem, mealType, servings);
     clearPendingSelection();
     // Dismisses the search/scanner screens above it and lands on the meal's
     // detail view (or replaces the current screen with it if it isn't

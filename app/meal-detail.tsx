@@ -5,7 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NUTRIENT_META, NUTRIENT_ORDER, sumEntryNutrients } from '@/components/features/nutrientMeta';
 import { Button } from '@/components/ui/Button';
-import { useDiaryStore, todayKey } from '@/store/diaryStore';
+import { useDiaryStore } from '@/store/diaryStore';
+import { useUiStore } from '@/store/uiStore';
 import { useUserStore } from '@/store/userStore';
 import type { MealEntry, MealType, NutrientKey } from '@/types';
 
@@ -50,7 +51,7 @@ function NutrientStat({ nutrientKey, value }: { nutrientKey: NutrientKey; value:
 export default function MealDetailScreen() {
   const params = useLocalSearchParams<{ mealType: MealType }>();
   const mealType = params.mealType ?? 'breakfast';
-  const date = todayKey();
+  const date = useUiStore((state) => state.selectedDate);
   const entries = useDiaryStore((state) => state.entriesByDate[date] ?? EMPTY_ENTRIES).filter(
     (entry) => entry.mealType === mealType,
   );
@@ -97,7 +98,7 @@ export default function MealDetailScreen() {
       <ScrollView className="flex-1 px-6 pt-4" contentContainerClassName="gap-2 pb-6">
         {entries.length === 0 ? (
           <Text className="pt-8 text-center text-sm text-slate-400">
-            Für {MEAL_LABELS[mealType]} wurde heute noch nichts eingetragen.
+            Für {MEAL_LABELS[mealType]} wurde an diesem Tag noch nichts eingetragen.
           </Text>
         ) : (
           entries.map((entry) => (

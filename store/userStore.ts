@@ -56,6 +56,8 @@ interface UserState {
   updateProfile: (input: ProfileInput) => void;
   updateGoals: (input: GoalsInput) => void;
   addWeightEntry: (weightKg: number, date?: string) => void;
+  updateWeightEntry: (id: string, changes: { date?: string; weightKg?: number }) => void;
+  removeWeightEntry: (id: string) => void;
   toggleNutrientVisibility: (key: NutrientKey) => void;
 }
 
@@ -141,9 +143,44 @@ export const useUserStore = create<UserState>()(
           const nextHistory = [...withoutSameDay, { id: makeId(), date: entryDate, weightKg }].sort(
             (a, b) => a.date.localeCompare(b.date),
           );
+          // Only the chronologically latest entry represents the user's
+          // "current" weight — logging a past or future date must not
+          // clobber it, now that entries aren't always for today.
+          const isLatest = nextHistory[nextHistory.length - 1]?.date === entryDate;
           return {
             weightHistory: nextHistory,
-            user: { ...state.user, weightKg },
+            user: isLatest ? { ...state.user, weightKg } : state.user,
+          };
+        });
+      },
+
+      updateWeightEntry: (id, changes) => {
+        set((state) => {
+          const existing = state.weightHistory.find((entry) => entry.id === id);
+          if (!existing) return state;
+          const nextDate = changes.date ?? existing.date;
+          const nextWeightKg = changes.weightKg ?? existing.weightKg;
+          // Upsert-by-date: if the edited date now collides with another
+          // entry, that other entry is superseded rather than duplicated.
+          const withoutConflicts = state.weightHistory.filter((entry) => entry.id !== id && entry.date !== nextDate);
+          const nextHistory = [...withoutConflicts, { id, date: nextDate, weightKg: nextWeightKg }].sort(
+            (a, b) => a.date.localeCompare(b.date),
+          );
+          const isLatest = nextHistory[nextHistory.length - 1]?.id === id;
+          return {
+            weightHistory: nextHistory,
+            user: isLatest ? { ...state.user, weightKg: nextWeightKg } : state.user,
+          };
+        });
+      },
+
+      removeWeightEntry: (id) => {
+        set((state) => {
+          const nextHistory = state.weightHistory.filter((entry) => entry.id !== id);
+          const latest = nextHistory[nextHistory.length - 1];
+          return {
+            weightHistory: nextHistory,
+            user: latest ? { ...state.user, weightKg: latest.weightKg } : state.user,
           };
         });
       },

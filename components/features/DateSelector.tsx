@@ -4,25 +4,9 @@ import { Pressable, Text, View } from 'react-native';
 
 import { todayKey } from '@/store/diaryStore';
 import { useUiStore } from '@/store/uiStore';
+import { addDays, buildMonthGrid, monthYearOf, WEEKDAY_LABELS } from '@/utils/calendarDates';
 
-const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 const ACCENT = '#10b981';
-
-interface MonthCell {
-  key: string;
-  day: number;
-  inMonth: boolean;
-}
-
-function addDays(dateKey: string, delta: number): string {
-  const date = new Date(`${dateKey}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + delta);
-  return date.toISOString().slice(0, 10);
-}
-
-function dateKeyOf(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
 
 function formatDayLabel(dateKey: string): string {
   const today = todayKey();
@@ -39,41 +23,16 @@ function formatDayLabel(dateKey: string): string {
   });
 }
 
-function buildMonthGrid(year: number, month: number): MonthCell[] {
-  const firstOfMonth = new Date(Date.UTC(year, month, 1));
-  const startWeekday = (firstOfMonth.getUTCDay() + 6) % 7; // Monday = 0
-  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-
-  const cells: MonthCell[] = [];
-  for (let i = startWeekday; i > 0; i -= 1) {
-    const date = new Date(Date.UTC(year, month, 1 - i));
-    cells.push({ key: dateKeyOf(date), day: date.getUTCDate(), inMonth: false });
-  }
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    cells.push({ key: dateKeyOf(new Date(Date.UTC(year, month, day))), day, inMonth: true });
-  }
-  while (cells.length % 7 !== 0) {
-    const last = cells[cells.length - 1];
-    const date = addDays(last.key, 1);
-    cells.push({ key: date, day: new Date(`${date}T00:00:00Z`).getUTCDate(), inMonth: false });
-  }
-  return cells;
-}
-
 export function DateSelector() {
   const selectedDate = useUiStore((state) => state.selectedDate);
   const setSelectedDate = useUiStore((state) => state.setSelectedDate);
   const [expanded, setExpanded] = useState(false);
-  const [viewedMonth, setViewedMonth] = useState(() => {
-    const d = new Date(`${selectedDate}T00:00:00Z`);
-    return { year: d.getUTCFullYear(), month: d.getUTCMonth() };
-  });
+  const [viewedMonth, setViewedMonth] = useState(() => monthYearOf(selectedDate));
 
   const isToday = selectedDate === todayKey();
 
   function jumpToMonthOf(dateKey: string) {
-    const d = new Date(`${dateKey}T00:00:00Z`);
-    setViewedMonth({ year: d.getUTCFullYear(), month: d.getUTCMonth() });
+    setViewedMonth(monthYearOf(dateKey));
   }
 
   function selectDate(dateKey: string) {

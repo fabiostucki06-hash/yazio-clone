@@ -1,4 +1,4 @@
-import { Droplet, Egg, Plus, Scale, Target, Wheat } from 'lucide-react-native';
+import { ChevronDown, Droplet, Egg, Pencil, Plus, Scale, Target, Trash2, Wheat, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,10 +8,14 @@ import { NutrientVisibilitySelector } from '@/components/features/NutrientVisibi
 import { ACTIVITY_OPTIONS, ChipGroup, GENDER_OPTIONS, GOAL_OPTIONS, THEME_OPTIONS } from '@/components/features/ProfileOptions';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { DateField } from '@/components/ui/DateField';
 import { LineChart } from '@/components/ui/LineChart';
 import { TextField } from '@/components/ui/TextField';
 import { useThemeStore } from '@/store/themeStore';
+import { useUiStore } from '@/store/uiStore';
 import { useUserStore } from '@/store/userStore';
+import type { WeightEntry } from '@/types';
+import { formatDateShort } from '@/utils/calendarDates';
 import type { ActivityLevel, Gender, Goal } from '@/utils/nutritionCalculator';
 
 function GoalInputRow({
@@ -60,6 +64,83 @@ function GoalInputRow({
   );
 }
 
+function WeightHistoryRow({
+  entry,
+  onSave,
+  onDelete,
+}: {
+  entry: WeightEntry;
+  onSave: (changes: { date: string; weightKg: number }) => void;
+  onDelete: () => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editWeight, setEditWeight] = useState(String(entry.weightKg));
+  const [editDate, setEditDate] = useState(entry.date);
+
+  function startEdit() {
+    setEditWeight(String(entry.weightKg));
+    setEditDate(entry.date);
+    setIsEditing(true);
+  }
+
+  function handleSave() {
+    const parsed = Number.parseFloat(editWeight.replace(',', '.'));
+    if (!Number.isFinite(parsed) || parsed <= 0) return;
+    onSave({ date: editDate, weightKg: parsed });
+    setIsEditing(false);
+  }
+
+  if (isEditing) {
+    return (
+      <View className="gap-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/5 p-3">
+        <DateField label="Datum" value={editDate} onChange={setEditDate} />
+        <View className="flex-row items-end gap-2">
+          <View className="flex-1">
+            <TextField label="Gewicht" keyboardType="decimal-pad" value={editWeight} onChangeText={setEditWeight} suffix="kg" />
+          </View>
+          <Pressable
+            onPress={handleSave}
+            className="h-[50px] items-center justify-center rounded-2xl bg-emerald-500 px-4 active:bg-emerald-600"
+          >
+            <Text className="text-sm font-semibold text-white">Speichern</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setIsEditing(false)}
+            className="h-[50px] w-[50px] items-center justify-center rounded-2xl bg-slate-100 dark:bg-white/5"
+          >
+            <X color="#64748b" size={18} />
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View className="flex-row items-center justify-between rounded-2xl border border-slate-200/60 bg-white/70 px-4 py-3 dark:border-slate-800/60 dark:bg-slate-900/60">
+      <View>
+        <Text className="text-sm font-semibold text-slate-900 dark:text-white">{entry.weightKg} kg</Text>
+        <Text className="text-xs text-slate-400">{formatDateShort(entry.date)}</Text>
+      </View>
+      <View className="flex-row items-center gap-2">
+        <Pressable
+          onPress={startEdit}
+          className="h-8 w-8 items-center justify-center rounded-full bg-slate-100/70 active:opacity-80 dark:bg-white/5"
+          accessibilityLabel="Eintrag bearbeiten"
+        >
+          <Pencil color="#64748b" size={14} />
+        </Pressable>
+        <Pressable
+          onPress={onDelete}
+          className="h-8 w-8 items-center justify-center rounded-full bg-red-500/10 active:opacity-80"
+          accessibilityLabel="Eintrag löschen"
+        >
+          <Trash2 color="#ef4444" size={14} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ProfilScreen() {
@@ -69,9 +150,12 @@ export default function ProfilScreen() {
   const updateProfile = useUserStore((state) => state.updateProfile);
   const updateGoals = useUserStore((state) => state.updateGoals);
   const addWeightEntry = useUserStore((state) => state.addWeightEntry);
+  const updateWeightEntry = useUserStore((state) => state.updateWeightEntry);
+  const removeWeightEntry = useUserStore((state) => state.removeWeightEntry);
   const toggleNutrientVisibility = useUserStore((state) => state.toggleNutrientVisibility);
   const themePreference = useThemeStore((state) => state.themePreference);
   const setThemePreference = useThemeStore((state) => state.setThemePreference);
+  const selectedDiaryDate = useUiStore((state) => state.selectedDate);
 
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
@@ -82,6 +166,8 @@ export default function ProfilScreen() {
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(user.activityLevel ?? 'moderate');
   const [goal, setGoal] = useState<Goal>(user.goal ?? 'maintain');
   const [newWeight, setNewWeight] = useState('');
+  const [newWeightDate, setNewWeightDate] = useState(selectedDiaryDate);
+  const [showWeightHistory, setShowWeightHistory] = useState(false);
   const [calorieGoal, setCalorieGoal] = useState(String(user.dailyCalorieGoal));
   const [carbsGoal, setCarbsGoal] = useState(String(user.dailyMacroGoal.carbs));
   const [proteinGoal, setProteinGoal] = useState(String(user.dailyMacroGoal.protein));
@@ -169,7 +255,7 @@ export default function ProfilScreen() {
   function handleAddWeight() {
     const parsed = Number.parseFloat(newWeight.replace(',', '.'));
     if (!Number.isFinite(parsed) || parsed <= 0) return;
-    addWeightEntry(parsed);
+    addWeightEntry(parsed, newWeightDate);
     setWeightKg(String(parsed));
     setNewWeight('');
   }
@@ -177,6 +263,7 @@ export default function ProfilScreen() {
   const chartPoints = weightHistory.map((entry) => entry.weightKg);
   const firstDate = weightHistory[0]?.date;
   const lastDate = weightHistory[weightHistory.length - 1]?.date;
+  const sortedHistoryDesc = [...weightHistory].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <SafeAreaView className="flex-1 bg-background-light dark:bg-background-dark">
@@ -270,7 +357,10 @@ export default function ProfilScreen() {
 
           <LineChart points={chartPoints} firstLabel={firstDate} lastLabel={lastDate} color="#10b981" />
 
-          <View className="flex-row items-end gap-3">
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <DateField label="Datum" value={newWeightDate} onChange={setNewWeightDate} />
+            </View>
             <View className="flex-1">
               <TextField
                 label="Neues Gewicht"
@@ -281,13 +371,44 @@ export default function ProfilScreen() {
                 placeholder={String(user.weightKg ?? '')}
               />
             </View>
-            <Pressable
-              onPress={handleAddWeight}
-              className="h-[50px] w-[50px] items-center justify-center rounded-2xl bg-emerald-500 shadow-lg shadow-emerald-500/30 active:opacity-90 active:bg-emerald-600"
-            >
-              <Plus color="#ffffff" size={20} />
-            </Pressable>
           </View>
+          <Button
+            label="Gewicht eintragen"
+            icon={<Plus color="#ffffff" size={18} />}
+            onPress={handleAddWeight}
+            disabled={!Number.isFinite(Number.parseFloat(newWeight.replace(',', '.'))) || Number.parseFloat(newWeight.replace(',', '.')) <= 0}
+          />
+
+          {weightHistory.length > 0 && (
+            <>
+              <Pressable
+                onPress={() => setShowWeightHistory((prev) => !prev)}
+                className="flex-row items-center justify-between border-t border-slate-200/50 pt-3 dark:border-slate-800/60"
+              >
+                <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+                  Verlauf bearbeiten ({weightHistory.length})
+                </Text>
+                <ChevronDown
+                  color="#64748b"
+                  size={18}
+                  style={{ transform: [{ rotate: showWeightHistory ? '180deg' : '0deg' }] }}
+                />
+              </Pressable>
+
+              {showWeightHistory && (
+                <View className="gap-2">
+                  {sortedHistoryDesc.map((entry) => (
+                    <WeightHistoryRow
+                      key={entry.id}
+                      entry={entry}
+                      onSave={(changes) => updateWeightEntry(entry.id, changes)}
+                      onDelete={() => removeWeightEntry(entry.id)}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
+          )}
         </Card>
       </ScrollView>
     </SafeAreaView>

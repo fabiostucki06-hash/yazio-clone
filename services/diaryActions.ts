@@ -1,17 +1,11 @@
-import { Alert, Platform } from 'react-native';
-
 import { buildSnapshot, pushSnapshotData } from '@/services/cloudSync';
 import { makeEntryId, useDiaryStore } from '@/store/diaryStore';
 import { describeSyncError, useSyncStore, withSyncSuppressed } from '@/store/syncStore';
+import { useToastStore } from '@/store/toastStore';
 import type { FoodItem, MealEntry, MealType } from '@/types';
 
-function showFailureAlert(message: string) {
-  if (Platform.OS === 'web') {
-    // RN's Alert.alert is a no-op on web - fall back to the real browser dialog.
-    window.alert(`Sync fehlgeschlagen: ${message}`);
-  } else {
-    Alert.alert('Sync fehlgeschlagen', message);
-  }
+function showFailureToast(message: string) {
+  useToastStore.getState().show(`Sync fehlgeschlagen: ${message}`, 'error');
 }
 
 // Serializes every online write-then-commit mutation so a second add/remove
@@ -42,7 +36,7 @@ async function pushThenCommit(date: string, nextEntriesForDate: MealEntry[], use
   } catch (err) {
     const message = describeSyncError(err);
     useSyncStore.setState({ status: 'error', error: message });
-    showFailureAlert(message);
+    showFailureToast(message);
     throw err;
   }
 

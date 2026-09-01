@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { Platform, View } from 'react-native';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Toast } from '@/components/ui/Toast';
 import { useAutoUpdate } from '@/hooks/useAutoUpdate';
 import { useThemeSync } from '@/hooks/useThemeSync';
 import { useSyncStore } from '@/store/syncStore';
@@ -21,16 +22,19 @@ export default function RootLayout() {
 
   const stack = (
     <ErrorBoundary>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
-        <Stack.Screen name="setup" options={{ animation: 'fade' }} />
-        <Stack.Screen name="add-food" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="barcode-scanner" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="log-quantity" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="analyze-food" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="meal-detail" options={{ presentation: 'modal' }} />
-      </Stack>
+      <View className="flex-1">
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+          <Stack.Screen name="setup" options={{ animation: 'fade' }} />
+          <Stack.Screen name="add-food" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="barcode-scanner" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="log-quantity" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="analyze-food" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="meal-detail" options={{ presentation: 'modal' }} />
+        </Stack>
+        <Toast />
+      </View>
     </ErrorBoundary>
   );
 

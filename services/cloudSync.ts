@@ -96,7 +96,14 @@ let lastPushedUpdatedAt: string | null = null;
 export async function pushSnapshotData(userId: string, snapshot: CloudSnapshot): Promise<string> {
   const updatedAt = new Date().toISOString();
   const { error } = await withTimeout(
-    supabase.from('user_data').upsert({ user_id: userId, data: snapshot, updated_at: updatedAt }),
+    // Explicit onConflict: without it, upsert() resolves conflicts against
+    // the table's primary key. If the live table's actual PK isn't user_id
+    // (e.g. a separate generated `id` column, with user_id only UNIQUE),
+    // that silently attempts an INSERT instead of an UPDATE and fails with
+    // "duplicate key value violates unique constraint user_data_user_id_key".
+    // Naming the conflict target explicitly makes this correct regardless of
+    // which column is actually the PK.
+    supabase.from('user_data').upsert({ user_id: userId, data: snapshot, updated_at: updatedAt }, { onConflict: 'user_id' }),
     'Sync-Push',
   );
   if (error) {

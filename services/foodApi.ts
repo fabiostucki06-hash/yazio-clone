@@ -1,6 +1,6 @@
 import type { FoodItem } from '@/types';
 
-const SEARCH_URL = 'https://world.openfoodfacts.org/cgi/search.pl';
+const SEARCH_URL = 'https://de.openfoodfacts.org/cgi/search.pl';
 const PRODUCT_URL = 'https://world.openfoodfacts.org/api/v2/product';
 const REQUEST_TIMEOUT_MS = 8000;
 
@@ -95,23 +95,34 @@ interface OffProductResponse {
   product?: OffProduct;
 }
 
+/** True if the product reports at least one real macro value - guards against OFF entries that are name-only stubs. */
+function hasAnyMacro(nutriments: OffNutriments): boolean {
+  return (
+    nutriments['energy-kcal_100g'] !== undefined ||
+    nutriments['energy-kcal'] !== undefined ||
+    nutriments.carbohydrates_100g !== undefined ||
+    nutriments.proteins_100g !== undefined ||
+    nutriments.fat_100g !== undefined
+  );
+}
+
 function normalizeFoodItem(product: OffProduct, fallbackId: string): FoodItem {
   const nutriments = product.nutriments ?? {};
-  const calories = nutriments['energy-kcal_100g'] ?? nutriments['energy-kcal'] ?? 0;
+  const calories = nutriments['energy-kcal_100g'] || nutriments['energy-kcal'] || 0;
 
   return {
     id: product.code ?? product.id ?? fallbackId,
-    name: product.product_name_de || product.product_name || 'Unbekanntes Produkt',
+    name: product.product_name_de || product.product_name || 'Unbekanntes Lebensmittel',
     brand: product.brands || undefined,
     caloriesPerServing: Math.round(calories),
     macrosPerServing: {
-      carbs: nutriments.carbohydrates_100g ?? 0,
-      protein: nutriments.proteins_100g ?? 0,
-      fat: nutriments.fat_100g ?? 0,
+      carbs: nutriments.carbohydrates_100g || 0,
+      protein: nutriments.proteins_100g || 0,
+      fat: nutriments.fat_100g || 0,
     },
     micronutrientsPerServing: {
-      fiber: nutriments.fiber_100g ?? 0,
-      sugar: nutriments.sugars_100g ?? 0,
+      fiber: nutriments.fiber_100g || 0,
+      sugar: nutriments.sugars_100g || 0,
       saturatedFat: nutriments['saturated-fat_100g'],
       unsaturatedFat: sumOptional(nutriments['monounsaturated-fat_100g'], nutriments['polyunsaturated-fat_100g']),
       cholesterol: gramsToMg(nutriments.cholesterol_100g),
@@ -178,12 +189,13 @@ export async function searchFood(query: string, signal?: AbortSignal): Promise<F
     return [];
   }
 
-  const url = `${SEARCH_URL}?search_terms=${encodeURIComponent(trimmedQuery)}&search_simple=1&action=process&json=1&page_size=25`;
+  const url = `${SEARCH_URL}?search_terms=${encodeURIComponent(trimmedQuery)}&search_simple=1&action=process&json=1&page_size=20`;
   const data = await fetchJson<OffSearchResponse>(url, signal);
+  if (__DEV__) console.log('OFF Raw API Response:', data);
   const products = data.products ?? [];
 
   return products
-    .filter((product) => product.product_name || product.product_name_de)
+    .filter((product) => (product.product_name || product.product_name_de) && hasAnyMacro(product.nutriments ?? {}))
     .map((product, index) => normalizeFoodItem(product, `search-${index}`));
 }
 

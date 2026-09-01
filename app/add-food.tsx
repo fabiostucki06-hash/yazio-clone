@@ -69,6 +69,15 @@ export default function AddFoodScreen() {
     const localMatches = searchLocalFoods(trimmed);
     setResults(localMatches);
     setNotice(null);
+
+    // Enough local matches already — skip the remote round-trip entirely
+    // (also keeps us under Open Food Facts' rate limit while typing).
+    if (localMatches.length >= 3) {
+      requestIdRef.current += 1;
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
     const controller = new AbortController();
@@ -231,7 +240,7 @@ export default function AddFoodScreen() {
             </View>
           ) : showEmptyState ? (
             <View className="items-center gap-4 pt-8">
-              <Text className="text-center text-sm text-slate-400">Keine Lebensmittel gefunden</Text>
+              <Text className="text-center text-sm text-slate-400">Keine Ergebnisse gefunden</Text>
               {!showCustomForm && (
                 <Pressable
                   className="flex-row items-center gap-2 rounded-full border border-emerald-500/60 bg-emerald-500/10 px-4 py-2 active:opacity-80"

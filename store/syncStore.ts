@@ -80,14 +80,20 @@ function handleLocalStoreChange() {
 
 function startAutoSyncWatchers(session: Session) {
   stopAutoSyncWatchers();
-  const unsubscribeRemote = subscribeToRemoteChanges(session.user.id, () => {
-    pullAndApply(session);
-  });
   unsubscribers = [
     useUserStore.subscribe(handleLocalStoreChange),
     useDiaryStore.subscribe(handleLocalStoreChange),
-    unsubscribeRemote,
   ];
+
+  // Best-effort: a realtime subscribe failure (Realtime not enabled on the
+  // table yet, a blocked WebSocket, ...) must never take down sign-in — it
+  // used to throw here *before* the pullAndApply below ever ran, silently
+  // skipping the actual data load.
+  try {
+    unsubscribers.push(subscribeToRemoteChanges(session.user.id, () => pullAndApply(session)));
+  } catch (err) {
+    console.error('[sync] realtime subscribe failed', err);
+  }
 }
 
 function stopAutoSyncWatchers() {

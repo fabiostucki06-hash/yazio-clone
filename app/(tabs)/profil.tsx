@@ -1,4 +1,5 @@
-import { ChevronDown, Droplet, Egg, Pencil, Plus, Scale, Target, Trash2, Wheat, X } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { ChevronDown, Droplet, Egg, LogOut, Pencil, Plus, Scale, Target, Trash2, Wheat, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,6 +12,7 @@ import { Card } from '@/components/ui/Card';
 import { DateField } from '@/components/ui/DateField';
 import { LineChart } from '@/components/ui/LineChart';
 import { TextField } from '@/components/ui/TextField';
+import { useSyncStore } from '@/store/syncStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useUiStore } from '@/store/uiStore';
 import { useUserStore } from '@/store/userStore';
@@ -156,6 +158,13 @@ export default function ProfilScreen() {
   const themePreference = useThemeStore((state) => state.themePreference);
   const setThemePreference = useThemeStore((state) => state.setThemePreference);
   const selectedDiaryDate = useUiStore((state) => state.selectedDate);
+  const session = useSyncStore((state) => state.session);
+  const signOut = useSyncStore((state) => state.signOut);
+
+  async function handleSignOut() {
+    await signOut();
+    router.replace('/onboarding');
+  }
 
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
@@ -410,6 +419,16 @@ export default function ProfilScreen() {
             </>
           )}
         </Card>
+
+        {session && (
+          <Pressable
+            onPress={handleSignOut}
+            className="flex-row items-center justify-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/5 px-5 py-3.5 active:bg-red-500/10"
+          >
+            <LogOut color="#f87171" size={18} />
+            <Text className="text-base font-semibold text-red-400">Abmelden</Text>
+          </Pressable>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

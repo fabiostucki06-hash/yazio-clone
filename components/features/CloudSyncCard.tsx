@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { AlertCircle, Check, Cloud, LogOut } from 'lucide-react-native';
+import { AlertCircle, Check, Cloud, LogOut, RefreshCw } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
@@ -16,6 +16,7 @@ export function CloudSyncCard() {
   const lastSyncedAt = useSyncStore((state) => state.lastSyncedAt);
   const signOut = useSyncStore((state) => state.signOut);
   const syncNow = useSyncStore((state) => state.syncNow);
+  const pullNow = useSyncStore((state) => state.pullNow);
 
   if (!session) return null;
 
@@ -42,7 +43,17 @@ export function CloudSyncCard() {
           <View>
             <Text className="text-sm font-semibold text-slate-500 dark:text-slate-400">Cloud-Sync</Text>
             {status === 'synced' && lastSyncedAt && (
-              <Text className="text-xs text-slate-400">Zuletzt synchronisiert: {formatSyncedAt(lastSyncedAt)}</Text>
+              <View className="flex-row items-center gap-1.5">
+                <Text className="text-xs text-slate-400">Zuletzt synchronisiert: {formatSyncedAt(lastSyncedAt)}</Text>
+                <Pressable
+                  onPress={() => pullNow()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Jetzt aktualisieren"
+                  className="h-5 w-5 items-center justify-center rounded-full active:opacity-60"
+                >
+                  <RefreshCw color="#94a3b8" size={12} />
+                </Pressable>
+              </View>
             )}
           </View>
         </View>

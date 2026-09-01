@@ -28,6 +28,7 @@ interface SyncState {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   syncNow: () => Promise<void>;
+  pullNow: () => Promise<void>;
 }
 
 let hasInitialized = false;
@@ -190,10 +191,21 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     // 'change' event fires — only a real focus/blur does. Cover that gap
     // explicitly on web, same pattern as hooks/useAutoUpdate.ts.
     if (Platform.OS === 'web') {
-      window.addEventListener('focus', () => {
+      const refetchIfSignedIn = () => {
         const { session } = get();
         if (session) pullAndApply(session);
+      };
+      window.addEventListener('focus', refetchIfSignedIn);
+      // A second, already-open tab in the *same* window never fires focus/blur
+      // or AppState's 'change' when you switch back to it — only visibilitychange
+      // does. Without this, that tab keeps showing whatever it last loaded.
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') refetchIfSignedIn();
       });
+      // Coming back online after a dropped connection (laptop sleep, wifi
+      // hiccup) — the realtime channel and any in-flight pull may have
+      // silently failed while offline, so re-pull explicitly once back up.
+      window.addEventListener('online', refetchIfSignedIn);
     }
   },
 
@@ -228,6 +240,27 @@ export const useSyncStore = create<SyncState>((set, get) => ({
       await pushSnapshot(session.user.id);
       set({ status: 'synced', lastSyncedAt: new Date().toISOString() });
     } catch (err) {
+      set({ status: 'error', error: describeSyncError(err) });
+    }
+  },
+
+  // Manual refresh: unlike pullAndApply, this unconditionally overwrites local
+  // state with whatever Supabase has right now — the whole point of a button
+  // the user presses because they suspect this device is showing stale data.
+  pullNow: async () => {
+    const { session } = get();
+    if (!session) return;
+    set({ status: 'syncing', error: null });
+    try {
+      const remote = await pullSnapshot(session.user.id);
+      if (remote) {
+        applyingRemote = true;
+        applySnapshot(remote.snapshot);
+        applyingRemote = false;
+      }
+      set({ status: 'synced', lastSyncedAt: new Date().toISOString(), error: null });
+    } catch (err) {
+      applyingRemote = false;
       set({ status: 'error', error: describeSyncError(err) });
     }
   },

@@ -187,7 +187,11 @@ export default function DiaryScreen() {
               )}
             </View>
 
-            <AiRecommendationCard remainingCalories={remainingCalories} remainingMacros={remainingMacros} />
+            <AiRecommendationCard
+              remainingCalories={remainingCalories}
+              remainingMacros={remainingMacros}
+              visibleNutrients={user.visibleNutrients}
+            />
           </View>
 
           <View className="flex-1 gap-3">

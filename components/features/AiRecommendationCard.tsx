@@ -2,18 +2,24 @@ import { Sparkles } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Text, View } from 'react-native';
 
-import type { Macros } from '@/types';
+import type { Macros, NutrientVisibility } from '@/types';
 import { generateRecommendation, getTimeOfDay } from '@/utils/recommendationEngine';
 
 interface AiRecommendationCardProps {
   remainingCalories: number;
   remainingMacros: Macros;
+  visibleNutrients: NutrientVisibility;
 }
 
-export function AiRecommendationCard({ remainingCalories, remainingMacros }: AiRecommendationCardProps) {
+export function AiRecommendationCard({ remainingCalories, remainingMacros, visibleNutrients }: AiRecommendationCardProps) {
   const recommendation = useMemo(
-    () => generateRecommendation(getTimeOfDay(), remainingCalories, remainingMacros),
-    [remainingCalories, remainingMacros],
+    () =>
+      generateRecommendation(getTimeOfDay(), remainingCalories, remainingMacros, {
+        protein: visibleNutrients.protein,
+        carbs: visibleNutrients.carbs,
+        fat: visibleNutrients.fat,
+      }),
+    [remainingCalories, remainingMacros, visibleNutrients.protein, visibleNutrients.carbs, visibleNutrients.fat],
   );
 
   return (

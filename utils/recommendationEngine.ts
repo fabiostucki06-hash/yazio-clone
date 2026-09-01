@@ -39,10 +39,17 @@ export function getTimeOfDay(date: Date = new Date()): TimeOfDay {
   return 'evening';
 }
 
+const DEFAULT_VISIBLE_MACROS: Record<'protein' | 'carbs' | 'fat', boolean> = {
+  protein: true,
+  carbs: true,
+  fat: true,
+};
+
 export function generateRecommendation(
   timeOfDay: TimeOfDay,
   remainingCalories: number,
   remainingMacros: Macros,
+  visibleMacros: Record<'protein' | 'carbs' | 'fat', boolean> = DEFAULT_VISIBLE_MACROS,
 ): Recommendation {
   const timeLabel = TIME_LABELS[timeOfDay];
 
@@ -54,11 +61,22 @@ export function generateRecommendation(
     };
   }
 
-  const gaps: { key: 'protein' | 'carbs' | 'fat'; remaining: number }[] = [
+  const allGaps: { key: 'protein' | 'carbs' | 'fat'; remaining: number }[] = [
     { key: 'protein', remaining: Math.max(remainingMacros.protein, 0) },
     { key: 'carbs', remaining: Math.max(remainingMacros.carbs, 0) },
     { key: 'fat', remaining: Math.max(remainingMacros.fat, 0) },
   ];
+  const gaps = allGaps.filter((gap) => visibleMacros[gap.key]);
+
+  // Every macro is hidden — fall back to a calorie-only tip that doesn't
+  // name any macro, rather than picking one to reference anyway.
+  if (gaps.length === 0) {
+    return {
+      timeLabel,
+      headline: `Noch ${Math.round(remainingCalories)} kcal übrig`,
+      suggestion: 'Eine ausgewogene, proteinreiche Mahlzeit passt gut in dein restliches Tagesbudget.',
+    };
+  }
 
   const topGap = gaps.reduce((max, gap) => (gap.remaining > max.remaining ? gap : max), gaps[0]);
   const macroLabel = topGap.key === 'protein' ? 'Protein' : topGap.key === 'carbs' ? 'Kohlenhydrate' : 'Fett';

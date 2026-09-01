@@ -19,11 +19,13 @@ export function NutrientVisibilitySelector({ visibleNutrients, onToggle }: Nutri
   const groups = useMemo(() => {
     return NUTRIENT_CATEGORY_ORDER.map((category) => ({
       category,
-      keys: NUTRIENT_ORDER.filter(
-        (key) => NUTRIENT_META[key].category === category && NUTRIENT_META[key].label.toLowerCase().includes(normalizedQuery),
-      ),
+      keys: NUTRIENT_ORDER.filter((key) => {
+        if (NUTRIENT_META[key].category !== category) return false;
+        if (normalizedQuery !== '') return NUTRIENT_META[key].label.toLowerCase().includes(normalizedQuery);
+        return visibleNutrients[key] ?? false;
+      }),
     })).filter((group) => group.keys.length > 0);
-  }, [normalizedQuery]);
+  }, [normalizedQuery, visibleNutrients]);
 
   return (
     <View className="gap-3">

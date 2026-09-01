@@ -1,8 +1,16 @@
-import type { Macros, Micronutrients, NutrientVisibility } from '../types';
+import type { Macros, Micronutrients, NutrientKey, NutrientVisibility } from '../types';
 
 export type Gender = 'male' | 'female';
 export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active';
-export type Goal = 'weight_loss' | 'maintain' | 'muscle_gain';
+export type Goal = 'weight_loss' | 'maintain' | 'muscle_gain' | 'endurance';
+export type MacroRatioPreset = 'high_protein_low_carb' | 'balanced' | 'keto' | 'custom';
+export type MicronutrientFocus = 'none' | 'iron' | 'fiber' | 'vitamins';
+
+export interface MacroRatio {
+  protein: number;
+  carbs: number;
+  fat: number;
+}
 
 export interface BMRInput {
   age: number;
@@ -22,13 +30,36 @@ const GOAL_ADJUSTMENTS_KCAL: Record<Goal, number> = {
   weight_loss: -500,
   maintain: 0,
   muscle_gain: 300,
+  endurance: 200,
 };
 
-const MACRO_SPLIT = {
-  protein: { ratio: 0.3, kcalPerGram: 4 },
-  carbs: { ratio: 0.4, kcalPerGram: 4 },
-  fat: { ratio: 0.3, kcalPerGram: 9 },
-} as const;
+/** Fractions of daily calories (protein/carbs at 4 kcal/g, fat at 9 kcal/g). "custom" has no fixed values here — the caller resolves it to a user-entered MacroRatio. */
+export const MACRO_RATIO_PRESET_VALUES: Record<Exclude<MacroRatioPreset, 'custom'>, MacroRatio> = {
+  high_protein_low_carb: { protein: 0.4, carbs: 0.25, fat: 0.35 },
+  balanced: { protein: 0.3, carbs: 0.4, fat: 0.3 },
+  keto: { protein: 0.2, carbs: 0.05, fat: 0.75 },
+};
+
+/** Which nutrient keys a micronutrient focus reveals in the visibility selector by default. */
+export const MICRONUTRIENT_FOCUS_KEYS: Record<Exclude<MicronutrientFocus, 'none'>, NutrientKey[]> = {
+  iron: ['iron'],
+  fiber: ['fiber'],
+  vitamins: [
+    'vitaminA',
+    'vitaminB1',
+    'vitaminB2',
+    'vitaminB3',
+    'vitaminB5',
+    'vitaminB6',
+    'vitaminB7',
+    'vitaminB9',
+    'vitaminB12',
+    'vitaminC',
+    'vitaminD',
+    'vitaminE',
+    'vitaminK',
+  ],
+};
 
 /** Mifflin-St Jeor formula. */
 export function calculateBMR({ age, gender, weightKg, heightCm }: BMRInput): number {
@@ -56,12 +87,12 @@ export function calculateDailyTargets(tdee: number, goal: Goal): number {
   return Math.round(tdee + adjustment);
 }
 
-export function calculateMacros(calories: number): Macros {
+export function calculateMacros(calories: number, ratio: MacroRatio = MACRO_RATIO_PRESET_VALUES.balanced): Macros {
   if (calories <= 0) throw new Error('calories must be greater than 0');
   return {
-    protein: Math.round((calories * MACRO_SPLIT.protein.ratio) / MACRO_SPLIT.protein.kcalPerGram),
-    carbs: Math.round((calories * MACRO_SPLIT.carbs.ratio) / MACRO_SPLIT.carbs.kcalPerGram),
-    fat: Math.round((calories * MACRO_SPLIT.fat.ratio) / MACRO_SPLIT.fat.kcalPerGram),
+    protein: Math.round((calories * ratio.protein) / 4),
+    carbs: Math.round((calories * ratio.carbs) / 4),
+    fat: Math.round((calories * ratio.fat) / 9),
   };
 }
 

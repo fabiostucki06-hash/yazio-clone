@@ -9,9 +9,14 @@ import {
   calculateMacros,
   calculateTDEE,
   DEFAULT_VISIBLE_NUTRIENTS,
+  MACRO_RATIO_PRESET_VALUES,
+  MICRONUTRIENT_FOCUS_KEYS,
   type ActivityLevel,
   type Gender,
   type Goal,
+  type MacroRatio,
+  type MacroRatioPreset,
+  type MicronutrientFocus,
 } from '@/utils/nutritionCalculator';
 
 function makeId(): string {
@@ -30,6 +35,8 @@ const defaultUser: User = {
   gender: 'male',
   activityLevel: 'moderate',
   goal: 'maintain',
+  macroRatioPreset: 'balanced',
+  micronutrientFocus: 'none',
   visibleNutrients: DEFAULT_VISIBLE_NUTRIENTS,
 };
 
@@ -38,8 +45,11 @@ export interface ProfileInput {
   gender: Gender;
   heightCm: number;
   weightKg: number;
+  goalWeightKg?: number;
   activityLevel: ActivityLevel;
   goal: Goal;
+  macroRatioPreset?: MacroRatioPreset;
+  customMacroRatio?: MacroRatio;
 }
 
 export interface GoalsInput {
@@ -51,7 +61,6 @@ interface UserState {
   user: User;
   weightHistory: WeightEntry[];
   hasOnboarded: boolean;
-  completeOnboarding: (name: string, email: string) => void;
   updateAccount: (input: { name: string; email: string }) => void;
   updateProfile: (input: ProfileInput) => void;
   updateGoals: (input: GoalsInput) => void;
@@ -59,6 +68,8 @@ interface UserState {
   updateWeightEntry: (id: string, changes: { date?: string; weightKg?: number }) => void;
   removeWeightEntry: (id: string) => void;
   toggleNutrientVisibility: (key: NutrientKey) => void;
+  setMicronutrientFocus: (focus: MicronutrientFocus) => void;
+  finishOnboarding: () => void;
 }
 
 export const useUserStore = create<UserState>()(
@@ -67,13 +78,6 @@ export const useUserStore = create<UserState>()(
       user: defaultUser,
       weightHistory: [{ id: makeId(), date: new Date().toISOString().slice(0, 10), weightKg: defaultUser.weightKg ?? 78 }],
       hasOnboarded: false,
-
-      completeOnboarding: (name, email) => {
-        set((state) => ({
-          user: { ...state.user, name: name.trim(), email: email.trim() },
-          hasOnboarded: true,
-        }));
-      },
 
       updateAccount: (input) => {
         set((state) => ({
@@ -90,7 +94,9 @@ export const useUserStore = create<UserState>()(
         });
         const tdee = calculateTDEE(bmr, input.activityLevel);
         const dailyCalorieGoal = calculateDailyTargets(tdee, input.goal);
-        const dailyMacroGoal = calculateMacros(dailyCalorieGoal);
+        const macroRatioPreset = input.macroRatioPreset ?? get().user.macroRatioPreset ?? 'balanced';
+        const ratio = macroRatioPreset === 'custom' ? input.customMacroRatio ?? MACRO_RATIO_PRESET_VALUES.balanced : MACRO_RATIO_PRESET_VALUES[macroRatioPreset];
+        const dailyMacroGoal = calculateMacros(dailyCalorieGoal, ratio);
 
         set((state) => ({
           user: {
@@ -99,8 +105,10 @@ export const useUserStore = create<UserState>()(
             gender: input.gender,
             heightCm: input.heightCm,
             weightKg: input.weightKg,
+            goalWeightKg: input.goalWeightKg ?? state.user.goalWeightKg,
             activityLevel: input.activityLevel,
             goal: input.goal,
+            macroRatioPreset,
             dailyCalorieGoal,
             dailyMacroGoal,
           },
@@ -134,6 +142,24 @@ export const useUserStore = create<UserState>()(
             },
           },
         }));
+      },
+
+      setMicronutrientFocus: (focus) => {
+        set((state) => {
+          const revealedKeys = focus === 'none' ? [] : MICRONUTRIENT_FOCUS_KEYS[focus];
+          const revealedVisibility = Object.fromEntries(revealedKeys.map((key) => [key, true]));
+          return {
+            user: {
+              ...state.user,
+              micronutrientFocus: focus,
+              visibleNutrients: { ...state.user.visibleNutrients, ...revealedVisibility },
+            },
+          };
+        });
+      },
+
+      finishOnboarding: () => {
+        set({ hasOnboarded: true });
       },
 
       addWeightEntry: (weightKg, date) => {
@@ -188,7 +214,7 @@ export const useUserStore = create<UserState>()(
     {
       name: 'coach-imi-user-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 4,
+      version: 5,
       migrate: (persistedState, version) => {
         const state = persistedState as UserState;
         return {
@@ -200,6 +226,9 @@ export const useUserStore = create<UserState>()(
             // nutrient list grew only has the old keys, so newly added nutrients
             // need their default (hidden) rather than being left undefined.
             visibleNutrients: { ...DEFAULT_VISIBLE_NUTRIENTS, ...state?.user?.visibleNutrients },
+            // Pre-v5 users have neither field persisted — same "balanced"/"none" defaults as new signups.
+            macroRatioPreset: state?.user?.macroRatioPreset ?? 'balanced',
+            micronutrientFocus: state?.user?.micronutrientFocus ?? 'none',
           },
           // Users persisted before onboarding existed already have a profile, so don't force them through it.
           hasOnboarded: version >= 3 ? (state?.hasOnboarded ?? false) : true,

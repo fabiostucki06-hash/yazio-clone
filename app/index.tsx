@@ -7,6 +7,7 @@ import { useUserStore } from '@/store/userStore';
 export default function Index() {
   const session = useSyncStore((state) => state.session);
   const sessionChecked = useSyncStore((state) => state.sessionChecked);
+  const hasOnboarded = useUserStore((state) => state.hasOnboarded);
   const [hasHydrated, setHasHydrated] = useState(useUserStore.persist.hasHydrated());
 
   useEffect(() => {
@@ -16,5 +17,6 @@ export default function Index() {
 
   if (!hasHydrated || !sessionChecked) return null;
 
-  return <Redirect href={session ? '/(tabs)' : '/onboarding'} />;
+  const destination = !session ? '/onboarding' : hasOnboarded ? '/(tabs)' : '/setup';
+  return <Redirect href={destination} />;
 }

@@ -38,7 +38,7 @@ let autoSyncTimer: ReturnType<typeof setTimeout> | null = null;
 let unsubscribers: (() => void)[] = [];
 let lastHandledAccessToken: string | null = null;
 
-function describeSyncError(err: unknown): string {
+export function describeSyncError(err: unknown): string {
   console.error('[Sync] Error:', err);
   if (err && typeof err === 'object') {
     const { hint, message, details } = err as { hint?: string; message?: string; details?: string };
@@ -78,6 +78,20 @@ function handleLocalStoreChange() {
   if (applyingRemote) return;
   recordLocalChange();
   scheduleAutoSync();
+}
+
+// Commits a local store mutation that has ALREADY been pushed to Supabase
+// (services/diaryActions.ts's write-then-commit flow) without letting the
+// change-watcher above treat it as a new unsynced edit and schedule a second,
+// redundant push of the exact same state a moment later. Same suppression
+// mechanism applySnapshot() already relies on for applied remote pulls.
+export function withSyncSuppressed(mutate: () => void): void {
+  applyingRemote = true;
+  try {
+    mutate();
+  } finally {
+    applyingRemote = false;
+  }
 }
 
 function startAutoSyncWatchers(session: Session) {

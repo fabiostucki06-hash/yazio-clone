@@ -1,0 +1,101 @@
+import { Alert, Platform } from 'react-native';
+
+import { buildSnapshot, pushSnapshotData } from '@/services/cloudSync';
+import { makeEntryId, useDiaryStore } from '@/store/diaryStore';
+import { describeSyncError, useSyncStore, withSyncSuppressed } from '@/store/syncStore';
+import type { FoodItem, MealEntry, MealType } from '@/types';
+
+function showFailureAlert(message: string) {
+  if (Platform.OS === 'web') {
+    // RN's Alert.alert is a no-op on web - fall back to the real browser dialog.
+    window.alert(`Sync fehlgeschlagen: ${message}`);
+  } else {
+    Alert.alert('Sync fehlgeschlagen', message);
+  }
+}
+
+// Serializes every online write-then-commit mutation so a second add/remove
+// that starts while the first is still in flight waits for it to finish
+// first. Each mutation reads the current diary state fresh and pushes a FULL
+// snapshot, so running two concurrently would let the second silently
+// overwrite the first's not-yet-committed change - a lost update, not just a
+// UI race.
+let mutationQueue: Promise<void> = Promise.resolve();
+
+function enqueue(mutation: () => Promise<void>): Promise<void> {
+  const run = mutationQueue.then(mutation);
+  mutationQueue = run.catch(() => {});
+  return run;
+}
+
+// Supabase user_data is the single source of truth here: local state is only
+// ever touched AFTER the push has succeeded. On failure nothing is applied
+// locally at all - "rollback" is simply that the mutation never happened.
+async function pushThenCommit(date: string, nextEntriesForDate: MealEntry[], userId: string): Promise<void> {
+  useSyncStore.setState({ status: 'syncing', error: null });
+  const nextEntriesByDate = { ...useDiaryStore.getState().entriesByDate, [date]: nextEntriesForDate };
+  const snapshot = { ...buildSnapshot(), entriesByDate: nextEntriesByDate };
+
+  let updatedAt: string;
+  try {
+    updatedAt = await pushSnapshotData(userId, snapshot);
+  } catch (err) {
+    const message = describeSyncError(err);
+    useSyncStore.setState({ status: 'error', error: message });
+    showFailureAlert(message);
+    throw err;
+  }
+
+  withSyncSuppressed(() => {
+    useDiaryStore.setState({ entriesByDate: nextEntriesByDate });
+  });
+  useSyncStore.setState({ status: 'synced', lastSyncedAt: updatedAt, remoteUpdatedAt: updatedAt, error: null });
+}
+
+interface PendingMeal {
+  foodItem: FoodItem;
+  mealType: MealType;
+  servings: number;
+}
+
+/** Adds one or more meals as a single push (one user action = one upsert, not one per item). */
+export function addMealsAndSync(date: string, meals: PendingMeal[]): Promise<void> {
+  const session = useSyncStore.getState().session;
+  if (!session) {
+    // Not signed in: nothing to push against - same local-only behavior as before.
+    for (const meal of meals) {
+      useDiaryStore.getState().addEntry(date, meal.foodItem, meal.mealType, meal.servings);
+    }
+    return Promise.resolve();
+  }
+
+  return enqueue(async () => {
+    const newEntries: MealEntry[] = meals.map((meal) => ({
+      id: makeEntryId(),
+      foodItem: meal.foodItem,
+      mealType: meal.mealType,
+      servings: meal.servings,
+      loggedAt: new Date().toISOString(),
+    }));
+    const currentEntries = useDiaryStore.getState().entriesByDate[date] ?? [];
+    await pushThenCommit(date, [...currentEntries, ...newEntries], session.user.id);
+  });
+}
+
+export function addMealAndSync(date: string, foodItem: FoodItem, mealType: MealType, servings: number): Promise<void> {
+  return addMealsAndSync(date, [{ foodItem, mealType, servings }]);
+}
+
+export function removeMealAndSync(date: string, entryId: string): Promise<void> {
+  const session = useSyncStore.getState().session;
+  if (!session) {
+    useDiaryStore.getState().removeEntry(date, entryId);
+    return Promise.resolve();
+  }
+
+  return enqueue(async () => {
+    const currentEntries = useDiaryStore.getState().entriesByDate[date] ?? [];
+    const nextEntries = currentEntries.filter((entry) => entry.id !== entryId);
+    await pushThenCommit(date, nextEntries, session.user.id);
+  });
+}

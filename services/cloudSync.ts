@@ -89,8 +89,11 @@ export function applySnapshot(snapshot: CloudSnapshot): void {
 // change and redundantly re-apply/re-fetch its own just-pushed data.
 let lastPushedUpdatedAt: string | null = null;
 
-export async function pushSnapshot(userId: string): Promise<string> {
-  const snapshot = buildSnapshot();
+// Low-level push of an explicit snapshot, rather than whatever buildSnapshot()
+// reads off the stores right now - needed by the write-then-commit mutation
+// flow (services/diaryActions.ts), which must push the *prospective* next
+// state to Supabase before it's allowed to touch local state at all.
+export async function pushSnapshotData(userId: string, snapshot: CloudSnapshot): Promise<string> {
   const updatedAt = new Date().toISOString();
   const { error } = await withTimeout(
     supabase.from('user_data').upsert({ user_id: userId, data: snapshot, updated_at: updatedAt }),
@@ -102,6 +105,10 @@ export async function pushSnapshot(userId: string): Promise<string> {
   }
   lastPushedUpdatedAt = updatedAt;
   return updatedAt;
+}
+
+export async function pushSnapshot(userId: string): Promise<string> {
+  return pushSnapshotData(userId, buildSnapshot());
 }
 
 export interface RemoteSnapshot {

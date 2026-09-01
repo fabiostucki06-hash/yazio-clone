@@ -9,8 +9,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/TextField';
+import { addMealsAndSync } from '@/services/diaryActions';
 import { analyzeFoodPhoto, type DetectedFoodItem, type VisionAnalysisResult } from '@/services/visionFoodApi';
-import { useDiaryStore } from '@/store/diaryStore';
 import { useUiStore } from '@/store/uiStore';
 import { useUserStore } from '@/store/userStore';
 import type { FoodItem, MealType, Micronutrients } from '@/types';
@@ -104,7 +104,6 @@ async function prepareImageForAnalysis(picked: ImagePicker.ImagePickerAsset): Pr
 export default function AnalyzeFoodScreen() {
   const params = useLocalSearchParams<{ mealType: MealType }>();
   const mealType = params.mealType ?? 'breakfast';
-  const addEntry = useDiaryStore((state) => state.addEntry);
   const selectedDate = useUiStore((state) => state.selectedDate);
   const visibleNutrients = useUserStore((state) => state.user.visibleNutrients);
 
@@ -114,6 +113,7 @@ export default function AnalyzeFoodScreen() {
   const [analysisSource, setAnalysisSource] = useState<VisionAnalysisResult['source'] | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [items, setItems] = useState<EditableItem[]>([]);
+  const [saving, setSaving] = useState(false);
 
   async function runAnalysis(picked: ImagePicker.ImagePickerAsset) {
     setImageUri(picked.uri);
@@ -231,12 +231,12 @@ export default function AnalyzeFoodScreen() {
 
   const validItemCount = items.filter((item) => item.name.trim() && parseNumber(item.grams, 0) > 0).length;
 
-  function handleSave() {
-    if (validItemCount === 0) return;
+  async function handleSave() {
+    if (validItemCount === 0 || saving) return;
 
-    for (const item of items) {
+    const meals = items.flatMap((item) => {
       const grams = parseNumber(item.grams, 0);
-      if (!item.name.trim() || grams <= 0) continue;
+      if (!item.name.trim() || grams <= 0) return [];
 
       const foodItem: FoodItem = {
         id: `vision-${Date.now()}-${Math.round(Math.random() * 1e6)}`,
@@ -252,9 +252,18 @@ export default function AnalyzeFoodScreen() {
         servingUnit: 'g',
       };
 
-      addEntry(selectedDate, foodItem, mealType, grams / 100);
-    }
+      return [{ foodItem, mealType, servings: grams / 100 }];
+    });
 
+    setSaving(true);
+    try {
+      await addMealsAndSync(selectedDate, meals);
+    } catch {
+      // Failure alert already shown by addMealsAndSync; stay on screen so the
+      // user can retry instead of silently losing the analyzed items.
+      setSaving(false);
+      return;
+    }
     router.back();
   }
 
@@ -466,7 +475,8 @@ export default function AnalyzeFoodScreen() {
                 label={`Ins Tagebuch speichern${validItemCount > 1 ? ` (${validItemCount} Einträge)` : ''}`}
                 icon={<Check color="#ffffff" size={18} />}
                 onPress={handleSave}
-                disabled={validItemCount === 0}
+                disabled={validItemCount === 0 || saving}
+                loading={saving}
               />
             )}
           </>

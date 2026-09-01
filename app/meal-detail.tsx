@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NUTRIENT_META, NUTRIENT_ORDER, sumEntryNutrients } from '@/components/features/nutrientMeta';
 import { Button } from '@/components/ui/Button';
+import { removeMealAndSync } from '@/services/diaryActions';
 import { useDiaryStore } from '@/store/diaryStore';
 import { useUiStore } from '@/store/uiStore';
 import { useUserStore } from '@/store/userStore';
@@ -55,7 +56,6 @@ export default function MealDetailScreen() {
   const entries = useDiaryStore((state) => state.entriesByDate[date] ?? EMPTY_ENTRIES).filter(
     (entry) => entry.mealType === mealType,
   );
-  const removeEntry = useDiaryStore((state) => state.removeEntry);
   const visibleNutrients = useUserStore((state) => state.user.visibleNutrients);
 
   const totalKcal = entries.reduce((sum, entry) => sum + entry.foodItem.caloriesPerServing * entry.servings, 0);
@@ -116,7 +116,11 @@ export default function MealDetailScreen() {
               </View>
               <Pressable
                 className="h-8 w-8 items-center justify-center rounded-full bg-red-500/10 active:opacity-80"
-                onPress={() => removeEntry(date, entry.id)}
+                onPress={() => {
+                  // Failure alert already shown inside removeMealAndSync; this
+                  // just avoids an unhandled-rejection warning at the call site.
+                  removeMealAndSync(date, entry.id).catch(() => {});
+                }}
               >
                 <Trash2 color="#ef4444" size={16} />
               </Pressable>

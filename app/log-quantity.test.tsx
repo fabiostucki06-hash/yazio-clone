@@ -31,7 +31,7 @@ const foodItem = {
 // Regression: confirming a portion must commit the entry directly to the
 // diary (not stage it in the old cart) and hand the user straight back to
 // the meal's detail screen with dismissTo, per the single-item confirm flow.
-it('commits the entry to the diary and dismisses back to meal-detail on confirm', () => {
+it('commits the entry to the diary and dismisses back to meal-detail on confirm', async () => {
   useUiStore.getState().setPendingSelection(foodItem, 'lunch');
 
   let tree!: ReturnType<typeof create>;
@@ -40,8 +40,10 @@ it('commits the entry to the diary and dismisses back to meal-detail on confirm'
   });
   const root = tree.root;
 
-  act(() => {
-    root.findByProps({ label: 'Bestätigen' }).props.onPress();
+  // handleAdd is async (write-then-commit against Supabase, falling back to a
+  // resolved-promise local write when signed out, as here) - let it settle.
+  await act(async () => {
+    await root.findByProps({ label: 'Bestätigen' }).props.onPress();
   });
 
   const entries = useDiaryStore.getState().entriesByDate[todayKey()] ?? [];

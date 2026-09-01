@@ -13,6 +13,8 @@ function makeId(): string {
   return `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
 }
 
+export { makeId as makeEntryId };
+
 const EMPTY_ENTRIES: MealEntry[] = [];
 
 interface DiaryState {

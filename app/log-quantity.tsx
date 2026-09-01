@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/TextField';
-import { useDiaryStore } from '@/store/diaryStore';
+import { addMealAndSync } from '@/services/diaryActions';
 import { useUiStore } from '@/store/uiStore';
 import { useUserStore } from '@/store/userStore';
 import type { MealType } from '@/types';
@@ -25,11 +25,11 @@ export default function LogQuantityScreen() {
   const mealType = useUiStore((state) => state.pendingMealType);
   const clearPendingSelection = useUiStore((state) => state.clearPendingSelection);
   const selectedDate = useUiStore((state) => state.selectedDate);
-  const addEntry = useDiaryStore((state) => state.addEntry);
   const visibleNutrients = useUserStore((state) => state.user.visibleNutrients);
 
   const isGramBased = foodItem?.servingUnit === 'g';
   const [amount, setAmount] = useState(isGramBased ? String(foodItem?.servingSize ?? 100) : '1');
+  const [submitting, setSubmitting] = useState(false);
 
   const parsedAmount = Number.parseFloat(amount.replace(',', '.'));
   const validAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 0;
@@ -54,9 +54,17 @@ export default function LogQuantityScreen() {
     router.back();
   }
 
-  function handleAdd() {
-    if (!foodItem || servings <= 0) return;
-    addEntry(selectedDate, foodItem, mealType, servings);
+  async function handleAdd() {
+    if (!foodItem || servings <= 0 || submitting) return;
+    setSubmitting(true);
+    try {
+      await addMealAndSync(selectedDate, foodItem, mealType, servings);
+    } catch {
+      // Failure alert already shown by addMealAndSync; stay on screen so the
+      // user can retry instead of silently losing the entry.
+      setSubmitting(false);
+      return;
+    }
     clearPendingSelection();
     // Dismisses the search/scanner screens above it and lands on the meal's
     // detail view (or replaces the current screen with it if it isn't
@@ -128,7 +136,7 @@ export default function LogQuantityScreen() {
           )}
         </Card>
 
-        <Button label="Bestätigen" onPress={handleAdd} disabled={servings <= 0} />
+        <Button label="Bestätigen" onPress={handleAdd} disabled={servings <= 0 || submitting} loading={submitting} />
       </View>
     </SafeAreaView>
   );

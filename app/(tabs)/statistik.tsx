@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useDiaryStore } from '@/store/diaryStore';
 import { useUserStore } from '@/store/userStore';
+import { getLocalDateKey } from '@/utils/calendarDates';
 
 const IN_GOAL_COLOR = '#10b981';
 const OVER_GOAL_COLOR = '#f59e0b';
@@ -22,7 +23,7 @@ function getLastNDays(days: number): { key: string; label: string }[] {
     const date = new Date();
     date.setDate(date.getDate() - i);
     result.push({
-      key: date.toISOString().slice(0, 10),
+      key: getLocalDateKey(date),
       label: date.toLocaleDateString('de-DE', { weekday: 'short' }).slice(0, 2),
     });
   }

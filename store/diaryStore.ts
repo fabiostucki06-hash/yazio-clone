@@ -3,9 +3,10 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import type { FoodItem, MealEntry, MealType } from '@/types';
+import { getLocalDateKey } from '@/utils/calendarDates';
 
 function todayKey(): string {
-  return new Date().toISOString().slice(0, 10);
+  return getLocalDateKey();
 }
 
 function makeId(): string {

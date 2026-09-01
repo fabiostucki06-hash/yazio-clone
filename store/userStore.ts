@@ -18,6 +18,7 @@ import {
   type MacroRatioPreset,
   type MicronutrientFocus,
 } from '@/utils/nutritionCalculator';
+import { getLocalDateKey } from '@/utils/calendarDates';
 
 function makeId(): string {
   return `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
@@ -76,7 +77,7 @@ export const useUserStore = create<UserState>()(
   persist(
     (set, get) => ({
       user: defaultUser,
-      weightHistory: [{ id: makeId(), date: new Date().toISOString().slice(0, 10), weightKg: defaultUser.weightKg ?? 78 }],
+      weightHistory: [{ id: makeId(), date: getLocalDateKey(), weightKg: defaultUser.weightKg ?? 78 }],
       hasOnboarded: false,
 
       updateAccount: (input) => {
@@ -114,7 +115,7 @@ export const useUserStore = create<UserState>()(
           },
         }));
 
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getLocalDateKey();
         const history = get().weightHistory;
         const hasToday = history.some((entry) => entry.date === today);
         if (!hasToday) {
@@ -163,7 +164,7 @@ export const useUserStore = create<UserState>()(
       },
 
       addWeightEntry: (weightKg, date) => {
-        const entryDate = date ?? new Date().toISOString().slice(0, 10);
+        const entryDate = date ?? getLocalDateKey();
         set((state) => {
           const withoutSameDay = state.weightHistory.filter((entry) => entry.date !== entryDate);
           const nextHistory = [...withoutSameDay, { id: makeId(), date: entryDate, weightKg }].sort(

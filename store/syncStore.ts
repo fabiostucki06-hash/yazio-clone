@@ -116,6 +116,20 @@ async function pullAndApply(session: Session): Promise<void> {
     const remote = await pullSnapshot(session.user.id);
     const localChangedAt = await getLocalChangeTimestamp();
     const shouldApply = remote != null && shouldApplyRemote(remote.updatedAt, localChangedAt);
+    if (__DEV__) {
+      console.log(
+        'Fetching diary for user:',
+        session.user.id,
+        'remote updatedAt:',
+        remote?.updatedAt ?? null,
+        'local changed at:',
+        localChangedAt,
+        'applying:',
+        shouldApply,
+        'entry dates:',
+        remote ? Object.keys(remote.snapshot.entriesByDate ?? {}) : [],
+      );
+    }
     if (shouldApply) {
       applyingRemote = true;
       applySnapshot(remote.snapshot);
